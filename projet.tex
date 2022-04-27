@@ -3,6 +3,8 @@
 \title{Modal logic, $\mu$-calcul, parity games and others}
 \author{Diego Dorn}
 
+\newcommand{\infiniteWords}{\infseq{(\IB^n)}}
+
 \begin{document}
 
 \maketitle
@@ -22,28 +24,32 @@ where quantification over relations are allowed.
 It adds second order variables, usually denoted by capital
 letters, that are interpreted by relations, that is,
 if the relation is of arity $n$, subsets of $\Mm^n$.
-\begin{itemize}
-    \item $t = t'$ when $t, t'$ are terms.
-    \item $R(t_1, \dots, t_n)$ when $t_1, \dots, t_n$ are terms
-        and $R \in \sigma$ is a relation of arity $n$.
-    \item $X(t_1, \dots, t_n)$ when $t_1, \dots, t_n$ are terms
-        and $X$ is a second-order variable of arity $n$.
-\end{itemize}
+
 For instance, the following formula are syntaxically valid:
 \begin{itemize}
-    \item $\forall P~ \exists x~ \forall y~ P(x) \implies P(y)$,
-        where $P$ is a variable of arity $1$.
-    \item $\forall A ~ \exists x ~
+    % \item $\forall P~ \exists x~ \forall y~ P(x) \implies P(y)$,
+    %     where $P$ is a variable of arity $1$.
+    \item If the language contains the symbol $\leq$
+        and $A$ is a second order variable of arity 1, then:
+    \[
+        \forall A ~ \exists x ~
             (A(x) \implies \forall y ~
-                (A(y) \implies ~ x \leq y) $,
-        assuming that $\leq$ is part of the language
-        and $A$ is a variable of arity $1$.
-        This expresses that every subset has a minimal element.
-    \item $\exists E\, \forall x\, \forall y \,
-        (E(x, y) \implies R(x, y)) \wedge \forall x \, \exists! y \, E(x, y)$
-        where $E$ is a relation of arity $2$ and $R$ is a relation of the language.
-        This express the fact that if $R$ is considered as the edges of a graph,
-        then there is a perfect matching.
+                (A(y) \implies x \leq y)
+    \]
+        is a formula expressing that every subset of the model
+        a has a minimal element.
+    \item If the language contains a binary relation $E$
+        and $M$ is a second order variable of arity 2,
+        consider
+        \[
+            \exists M\, \forall x\, \forall y \,
+            \bigparenthesis{M(x, y) \implies E(x, y)}
+            \wedge \forall x \, \exists! y \, M(x, y).
+        \]
+        If $E$ is symetrical, we can view any model as an
+        undirected graph with edges given by $E$, then
+        the formula above express the fact that
+        there exists a perfect matching, namely $M$.
 \end{itemize}
 
 \begin{definition}
@@ -109,27 +115,217 @@ or over subsets of the domain (second-order quantification).
 
 The semantics of MSO are the same as SO semantics.
 
-There are two things that are remarkable about
-this logic, when considered together:
-\begin{itemize}
-    \item MSO is very expressive. It can for instance
-        describe problems at every level of the polynomial hierarchy ($\PHierachy$).
-    \item MSO is decidable for a large class of models, for instance
-        infinte strings and trees.
-\end{itemize}
+% There are two things that are remarkable about
+% this logic, when considered together:
+% \begin{itemize}
+%     \item MSO is very expressive. It can for instance
+%         describe problems at every level of the polynomial hierarchy ($\PHierachy$).
+%     \item MSO is decidable for a large class of models, for instance
+%         infinte strings and trees.
+% \end{itemize}
 
 
-\section{Decidability of MSO on strings}
+\subsection{S1S: infinite strings in MSO}
+
+The decidability problem for monadic second order logic
+in general is impossible, because it contains first order logic.
+However, in monadic second order logic, the theory of \N with
+the successor (S1S) has been shown to be decidable.
+This theory is also called the theory of inifinite strings
+for reasons that will be clear in the next section.
+
+\begin{definition}
+    Let $n \in \N$ be a positive integer.
+    A \emph{language}  of S1S is $\Ll = \set{\Symbol{0}, \Symbol{S}, \Symbol{<}, \Symbol{P_1}, ..., \Symbol{P_n}}$,
+    where $0$ is a constant symbol, $S$ is a unary function,
+    $<$ is a binary relation, and the $P_i$ are unary relations.
+
+    Let $P_1, \dots, P_n \subset \N$. A model of S1S is
+    $\Mm = \set{\N, 0, +1, <, P_1, ..., P_n}$,
+    where the domain is always \N, $S^\Mm = +1$ is the successor function
+    which maps $x$ to $x+1$, $<^\Mm = <$ is interpreted as the usual order
+    on \N, and $P_i^\Mm = P_i$.
+
+\end{definition}
+
+\begin{remark}
+To get a model of S1S, we only need to give the sets $P_1, \dots, P_n$.
+Therefore, a model can be coded by an \w-word $\Pp \in \infseq{(\IB^n)}$
+where $i \in P_k \iff (\Pp_i)_k = 1$.
+
+In other words, each letter of the \w-word $\Pp$ is a $n$-tuple of
+$0$'s and $1$'s, and if the $k$-th element of $i$-th letter is a 1,
+then $P_i(k)$ holds.
+\end{remark}
+
+The reason why S1S is often called the theory of infinite strings
+is because if for each $i \in \N$, there is exactly
+one of the $\P_1(i), \dots, P_n(i)$, then
+we can represent the model as an infinite string
+on the alphabet $\Sigma = \set{P_1, \dots, P_n}$.
+
+\paragraph{}
+The semantics of S1S are the same as MSO. In particular,
+we use \N as the universe for first order variables
+and $2^\N$ as the universe for second order variables.
+If $w \in \infiniteWords$ is an infinite word inducing
+the model $\Mm = \set{\N, 0, +1, <, P_1, ..., P_n}$,
+and $\phi(X_1, \dots, X_n)$
+is a S1S formula with $n$ free second order variables,
+we write \[
+    w \models \phi(X_1, \dots, X_n)
+    ~~\iff~~
+    \Mm \models \phi_{[P_1/X_1, \dots, P_n/X_n]}
+\]
+
+\begin{definition}
+    An \w-language $L \subset \infseq{(\IB^n)}$ is
+    \emph{S1S-definable} if there is some S1S formula
+    $\phi(X_1, \dots, X_n)$ such that
+\[
+    L = \setst{w \in \infseq{(\IB^n)}}{
+        w \models \phi(X_1, \dots, X_n)
+    }
+\]
+\end{definition}
+
+\begin{example}
+    $L = \setst{w \in \infseq{\IB}}{w \text{ has infinitly many 1's}}$
+    is first order definable by
+    $\phi(X_1) = \forall s\, \exists t\, (s < t \wedge X_1(t))$
+\end{example}
 
 
 
 
+\begin{definition}
+    A \emph{Büchi automaton} is similar to a non-deterministic pushdown automaton.
+    It consists of:
+    \begin{itemize}
+        \item a set of states $Q$
+        \item a finite alphabet $\Sigma$
+        \item a transition function $\delta : Q \times \Sigma \to \Pp(Q)$
+        \item an initial state $q_0 \in Q$
+        \item a set of accepting state $F \subset Q$.
+    \end{itemize}
+
+    A \emph{run} of the automaton
+    on a word $w \in \infseq{\Sigma}$
+    is a sequence of states $r \in \infseq{Q}$
+    such that $r_0 = q_0$ and for all $n \in \N, r_{n+1} \in \delta(r_n, w_n)$.
+
+    The automaton accepts the word $w$ if there exists run on $w$
+    visits an accepting state infinitely many times.
+
+    The \w-language of an automaton is the set of words
+    that are accepted by the automaton.
+\end{definition}
+
+\begin{definition}
+    A \emph{deterministic Büchi automaton} is a Büchi automaton
+    where the transition function is deterministic, that is,
+    for all state $q \in Q$ and letter $l \in \Sigma$,
+    $\abs{\delta(q, l)} \leq 1$.
+\end{definition}
 
 
+We say that a \w-language $L \subset \infseq{\Sigma}$ is
+\emph{Büchi-definable} if there is a Büchi automaton
+whose language is $L$.
+
+\begin{lemma}\label{lemma:buchi-definable}
+    A Büchi-definable \w-language is S1S-definable.
+\end{lemma}
+
+\begin{proof}
+    Let $\Aa = (Q, \Sigma, \delta, q_1, F)$ be a Büchi automaton.
+    We need to construct a formula $\phi(X_1, \dots, X_n)$
+    such that for all \w-word $w \in \infseq{\Sigma}$
+    we have $w \models \phi(X_1, \dots, X_n)$
+    if and only if $\Aa$ accepts $w$.
+    For this, we set $n := \abs{\Sigma}$ and \[
+        \phi(X_1, \dots, X_n) =
+            \exists Q_1, \dots, Q_{n} ~
+            \phi_{part}
+            \wedge
+            \phi_{start}
+            \wedge
+            \phi_{trans}
+            \wedge
+            \phi_{accept}
+    \]
+    Informally, for each integer $t$ there is exactly one
+    of the $Q_i$ such that $t \in Q_i$, which corresponds
+    to the state of the automaton on an accepting run.
+    Formally,
+    \begin{itemize}
+        \item $\phi_{part}$ asserts that the sets $Q_1, \dots, Q_{n}$
+            form a partition of $\N$
+            \[\phi_{part}(Q_1, \dots, Q_n) :=
+                \forall t \bigvee_{i=1..n} Q_i(t)
+                \wedge
+                \forall t \bigwedge_{i \neq j}
+                    \neg \parenthesis{Q_i(t) \wedge Q_j(t)}
+            \]
+        \item $\phi_{start}$ encodes the facts that a run
+            must start at $q_1$, so \[
+                \phi_{start}(Q_1, \dots, Q_n) := Q_1(0)
+            \]
+        \item $\phi_{trans}$ encodes the transition function.
+            \[
+                \phi_{trans}(Q_1, \dots, Q_n) =
+                \forall t~
+                \bigwedge_{q' \notin \delta(q, l)}
+                    Q_q(t) \wedge X_l(t) \implies \neg Q_{q'}(t + 1)
+            \]
+            where the conjunction is on every triple $(q, l, q') \in
+                Q \times \Sigma \times Q$ such that $q' \notin \delta(q, l)$.
+            This corresponds to forbiding the automaton to
+            move from the state $q$ to $q'$ by reading the letter $l$.
+            Note that we do not need to explicitely require that the
+            automato goes to some state in $\delta(q, l)$ as
+            the fact that the $Q_i$ form a partition already require
+            that the automaton goes to \textit{some} state.
+        \item $\phi_{accept}$ encodes the fact that the automaton
+            visits infinitely many times an accepting state:
+            \[
+                \phi_{accept}(Q_1, \dots, Q_n) =
+                \forall t\, \exists s\, \Bigparenthesis{
+                    t < s \wedge \bigwedge_{i \in F} Q_i(t)
+                }
+            \]
+    \end{itemize}
+
+    By construction, if there is an accepting run $r \in \infseq{Q}$
+    then we have $w \models \phi(X_1, \dots, X_n)$ (where, remember, the $X_i$
+    are interpreted as the set of integer where $w$ has the letter $i$).
+    On the other side, if $w \models \phi$, an accepting run
+    is given by the sets $Q_1, \dots, Q_{n}$ by $r_i = j$
+    if and only if $i \in Q_j$. This is well defined because the $Q_i$
+    form a partition of $\N$, and corresponds to an accepting run
+    since it starts at $q_1$ (by $\phi_{start}$),
+    moves according to the transition function (by $\phi_{trans}$)
+    and visits infinitely many time an accepting state(by $\phi_{accept}$).
+\end{proof}
 
 
+We now show that we can build a Büchi automaton from
+a S1S formula. Combined with the previous lemma, we obtain
 
+\begin{theorem}
+    An \w-language is Büchi-definable if and only if
+    it is S1S definable.
+\end{theorem}
 
+\begin{proof}
+    Let $L$ be an \w-language. By \autoref{lemma:buchi-definable},
+    we know that if it is Büchi-definable, it is S1S-definable.
+
+    Now, let $\phi(X_1, \dots, X_n)$ be a S1S formula.
+    We show that there is a Büchi automaton on the language $\IB^n$
+    recognising this language by induction on the height of $\phi$.
+
+\end{proof}
 
 
 
