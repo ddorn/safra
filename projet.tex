@@ -4,6 +4,13 @@
 \author{Diego Dorn}
 
 \newcommand{\infiniteWords}{\infseq{(\IB^n)}}
+\newcommand{\Sing}{\mathrm{Sing}}
+\newcommand{\Succ}{\mathrm{Succ}}
+\newcommand{\spacedAutomata}[1]{\begin{center}
+\begin{tikzpicture}[automata, node distance=90pt]
+#1
+\end{tikzpicture}
+\end{center}}
 
 \begin{document}
 
@@ -308,9 +315,84 @@ whose language is $L$.
     and visits infinitely many time an accepting state(by $\phi_{accept}$).
 \end{proof}
 
+We will later show that the converse is also true,
+that is, given some S1S-decidable language,
+we can build a Büchi automaton that recognises the same
+language. The two notions are therfore equivalent.
 
-We now show that we can build a Büchi automaton from
-a S1S formula. Combined with the previous lemma, we obtain
+To that extent, we will introduce deterministic Muller
+automata and show that they are equivalent to (non-deterministic)
+Büchi automatons. This will be used to show
+that it is possible to complement a Büchi automaton.
+We will then show that S1S is equivalent
+to a simpler version with less constructs, $\text{S1S}_0$.
+Finally, we will show that Büchi automata are as expressive
+as $\text{S1S}_0$ formulas.
+
+
+\begin{definition}
+    A formula is a $\text{S1S}_0$ formula if
+    \begin{itemize}
+        \item its atomic formulas are one of $X \subseteq Y$,
+            $\Succ{X, Y}$ or $\Sing{X}$, for $X$ and $Y$ some second
+            order variable. We interpret that $X \subseteq Y$ holds
+            if $X$ is a subset of $Y$, $\Succ(X, Y)$ holds if
+            $(X, Y) = (\set{a}, \set{a+1})$ for some $a \in \N$ and
+            $\Sing(X)$ holds if $X = \set{a}$ for some $a$.
+        \item The only connectors are $\vee$ and $\neg$
+        \item The only quantifiers are second order existential quantifers.
+    \end{itemize}
+\end{definition}
+
+\begin{lemma}
+    \label{lemma:s1s-is-s1s-0}
+    Every S1S formula $\phi(X_1, \dots, X_n)$ has
+    an equivalent $\text{S1S}_0$ formula $\phi_0(X_1, \dots, X_n)$.
+\end{lemma}
+
+\begin{proof}
+    First, we know that we can eliminate all conjunction with De Morgan's
+    laws and replace all impliations with their definition. Similarly, we can eliminate universal quantifers
+    since $\forall x \psi(x) \iff \neg \exists x \neg \psi(x)$.
+
+    We can eliminate the constant $0$, by using a fresh variable (say $z$)
+    that does not appear in $\phi$. Then, $\phi$ is equivalent to
+    \[
+        \exists z~ \bigparenthesis{\neg\exists x\, (x < z) \wedge \phi_{[z/0]}}
+    \]
+    where $\phi_{[z/0]}$ is the formula where every 0 of $\phi$ is replaced by $z$.
+
+    The formula $x < y$ is equivalent to \[
+        \forall X~ \Bigparenthesis{
+            X(x) \wedge \forall t \bigparenthesis{X(t) \implies X(S(t))}
+        } \implies X(y)
+    \]
+    That is, every set that contains $x$ and is closed under the successor
+    function also contains $y$.
+
+    Then we can ensure that the successor function occurs only
+    in formulas of the form $S(x) = y$. For instance,
+    we replaces instances of $X(S(S(x)))$ by \[
+        \exists s \exists t \bigparenthesis{
+            S(x) = s \wedge S(s) = t \wedge X(t)
+        }
+    \]
+    We can similarly remove all instances of the form $S(...(S(x)...) = S(...(S(y)...)$
+    by adding intermediate variables.
+
+    We have shown so far that we can consider formulas
+    that constist only of $S(x) = y$, $X(x)$, connectors $\neg$ and $\wedge$
+    and first and second order existential quantifers.
+    In order to remove completely first order variables and quantifers,
+    we need to modify at the same time every occurence of first order variables:
+    \begin{itemize}
+        \item If $\phi$ is of the form $\exists x \psi(x)$, we replace it by
+            $\exists X ~ \Sing(X) \wedge \psi_{[X/x]}$ where $X$ is a variable not apearing
+            in $\psi$.
+        \item If $\phi$ is $X(y)$, we replace it by $\Sing(Y) \wedge Y \subseteq X$
+        \item If $\phi$ is $x' = y$ we replace it by $\Succ(x, y)$.
+    \end{itemize}
+\end{proof}
 
 \begin{theorem}
     An \w-language is Büchi-definable if and only if
@@ -321,9 +403,73 @@ a S1S formula. Combined with the previous lemma, we obtain
     Let $L$ be an \w-language. By \autoref{lemma:buchi-definable},
     we know that if it is Büchi-definable, it is S1S-definable.
 
-    Now, let $\phi(X_1, \dots, X_n)$ be a S1S formula.
-    We show that there is a Büchi automaton on the language $\IB^n$
-    recognising this language by induction on the height of $\phi$.
+    For the other direction, will show only for the case
+    where the alphabet is $\IB = \set{0, 1}$ as the proof
+    in the general case adds only more verbose formalism and no new ideas.
+
+    By \autoref{lemma:s1s-is-s1s-0}, formulas of S1S
+    are as expressive as formulas of $\text{S1S}_0$,
+    so it suffices construct a Büchi automaton
+    that corresponds each $\text{S1S}_0$ formula.
+    We consider formulas of the form
+    $\phi(P, X_1, \dots, X_m)$
+    where \begin{itemize}
+        \item the $P$ is a second order variable that will
+            represent the positions of the \w-word where there is a 1.
+        \item the $X_i$ are second order free variables.
+    \end{itemize}
+    We will abreviate this as $\phi(P, \vec X)$,
+    and for each such formula, we construct an equivalent
+    automaton on the language $\IB \times \IB^m = \IB^{m+1}$.
+    By equivalent, we mean that $\phi$ holds when given any $P, \vec X$
+    if and only if the automaton accepts the word $(P, \vec X)$.
+
+    We proceed by induction on the height of the formula $\phi$.
+
+    \begin{itemize}
+        \item yes.
+    \end{itemize}
+
+
+
+    \begin{itemize}
+        \item If $\phi(P, x, y)$ is $x = y$, an automaton
+            that recognises the language $\IB^3$ is
+            \begin{center}
+            \begin{tikzpicture}[automata, node distance=90pt]
+                \node[state, initial] (q0) at (0, 0) {};
+                \node[state, accepting] (q1) [right of=q0] {};
+                \draw (q0)
+                    edge node {$(*, 1, 1)$} (q1)
+                    edge [loop above] node {$(*, 0, 0)$} (q0)
+                    (q1)
+                    edge [loop above] node {$(*, 0, 0)$} (q1)
+                    ;
+            \end{tikzpicture}
+            \end{center}
+            where the wildcard * means that the value in that coordinate
+            is ignored.
+            This construction ensures that the only way a word is recognised
+            is if its second and third coordinates consist only of zeros,
+            except in one place where they are both one.
+        \item If $\phi(P, x, y)$ is $S(x) = y$, we want that the only 1
+            in the second coordinate appears just before
+            the 1 in the second.
+            \spacedAutomata{
+                \node[state, initial] (q0) at (0, 0) {};
+                \node[state] (q1) [right of=q0] {};
+                \node[state, accepting] (q2) [right of=q1] {};
+
+                \draw (q0) edge [loop above] node {$(*, 0, 0)$} (qo)
+                    edge node {$(*, 0, 1)$} (q1)
+                    (q1) edge node {$(*, 1, 0)$} (q2)
+                    (q2) edge [loop above] node {$(*, 0, 0)$} (q2);
+            }
+        \item If $\phi(P, x, y)$ is $S^a(x) = S^b(y)$,
+            where $S^a$ is the successor function applied $a$ times,
+            we can assume that $a < b$ (otherwise we consider $S^b(y) = S^a(x)$).
+
+    \end{itemize}
 
 \end{proof}
 
