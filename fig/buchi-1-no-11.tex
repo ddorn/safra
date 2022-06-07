@@ -1,0 +1,13 @@
+\begin{tikzpicture}[>=latex',join=bevel]
+  \node[initial] (A) at (10.0bp,23.9bp) [draw,ellipse] {A};
+  \node (B) at (83.0bp,23.9bp) [draw,ellipse] {B};
+  \node[accepting] (C) at (156.0bp,23.9bp) [draw,ellipse] {C};
+
+  \path (A) edge[edge0,->,loop above] (A);
+  \path (A) edge[edge1,->,loop below] (A);
+  \path [->,edge1] (A) edge[bend right] node {1} (B);
+  \path [->,edge0] (A) edge[bend left] node {0} (B);
+  \path (B) edge [->,edge0,loop above] (B);
+  \path [->,edge1] (B) edge[bend left] node {1} (C);
+  \path [->,edge0] (C) edge[bend left] node {0} (B);
+\end{tikzpicture}

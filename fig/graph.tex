@@ -1,0 +1,59 @@
+\begin{tikzpicture}[>=latex',join=bevel,]
+\pgfsetlinewidth{1bp}
+%%
+\begin{scope}
+  \pgfsetstrokecolor{black}
+  \definecolor{strokecol}{rgb}{1.0,1.0,1.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{fillcol}{rgb}{1.0,1.0,1.0};
+  \pgfsetfillcolor{fillcol}
+  \filldraw (0.0bp,0.0bp) -- (0.0bp,587.37bp) -- (423.08bp,587.37bp) -- (423.08bp,0.0bp) -- cycle;
+\end{scope}
+  \node (0) at (368.69bp,567.87bp) [draw,ellipse,state] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}A}]
+\end{forest}};
+  \node (1) at (321.12bp,426.93bp) [draw,ellipse,state] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}AB}]
+\end{forest}};
+  \node (2) at (257.23bp,281.63bp) [draw,ellipse,state] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}ABC}
+  [{\nodepart{one}1\nodepart{two}C}]]
+\end{forest}};
+  \node (3) at (90.863bp,303.03bp) [draw,ellipse,state] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}AB}
+  [{\nodepart{one}1\nodepart{two}B}]]
+\end{forest}};
+  \node (4) at (191.75bp,131.48bp) [draw,ellipse,state] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}ABC}
+  [{\nodepart{one}2\nodepart{two}C}]]
+\end{forest}};
+  \node (5) at (36.5bp,154.78bp) [draw,ellipse,state] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}ABC}
+  [{\nodepart{one}1\nodepart{two}C !}]]
+\end{forest}};
+  \node (6) at (314.76bp,34.0bp) [draw,ellipse,state] { \begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}AB}
+  [{\nodepart{one}2\nodepart{two}B}]]
+\end{forest}};
+  \node (7) at (386.58bp,174.88bp) [draw,ellipse,state] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}ABC}
+  [{\nodepart{one}2\nodepart{two}C !}]]
+\end{forest}};
+  \draw [->,edge0] (0) ..controls (361.39bp,524.17bp) and (347.92bp,483.26bp)  .. node {0} (1);
+  \draw [->,edge1] (0) ..controls (348.02bp,528.68bp) and (333.93bp,487.98bp)  .. node {1} (1);
+  \draw [->,edge0] (1) ..controls (352.83bp,434.27bp) and (361.62bp,432.07bp)  .. (361.62bp,426.93bp) .. controls (361.62bp,423.65bp) and (358.01bp,421.56bp)  .. node {0} (1);
+  \draw [->,edge1] (1) ..controls (302.58bp,384.77bp) and (287.72bp,350.99bp)  .. node {1} (2);
+  \draw [->,edge0] (2) ..controls (195.71bp,289.54bp) and (161.54bp,293.94bp)  .. node {0} (3);
+  \draw [->,edge1] (2) ..controls (239.55bp,223.73bp) and (226.84bp,194.24bp)  .. node {1} (4);
+  \draw [->,edge0] (3) ..controls (134.73bp,309.64bp) and (142.86bp,307.39bp)  .. (142.86bp,303.03bp) .. controls (142.86bp,300.24bp) and (139.53bp,298.31bp)  .. node {0} (3);
+  \draw [->,edge1] (3) ..controls (77.893bp,247.64bp) and (67.738bp,219.4bp)  .. node {1} (5);
+  \draw [->,edge1] (4) ..controls (209.43bp,189.38bp) and (222.13bp,218.87bp)  .. node {1} (2);
+  \draw [->,edge0] (4) ..controls (237.84bp,94.954bp) and (261.09bp,76.535bp)  .. node {0} (6);
+  \draw [->,edge0] (5) ..controls (50.405bp,212.87bp) and (60.657bp,241.16bp)  .. node {0} (3);
+  \draw [->,edge1] (5) ..controls (94.757bp,146.04bp) and (122.76bp,141.84bp)  .. node {1} (4);
+  \draw [->,edge0] (6) ..controls (358.63bp,40.607bp) and (366.76bp,38.359bp)  .. (366.76bp,34.0bp) .. controls (366.76bp,31.207bp) and (363.42bp,29.281bp)  .. node {0} (6);
+  \draw [->,edge1] (6) ..controls (334.2bp,87.312bp) and (347.86bp,114.52bp)  .. node {1} (7);
+  \draw [->,edge1] (7) ..controls (339.02bp,214.13bp) and (313.56bp,235.14bp)  .. node {1} (2);
+  \draw [->,edge0] (7) ..controls (365.78bp,118.79bp) and (352.2bp,91.893bp)  .. node {0} (6);
+%
+\end{tikzpicture}

@@ -1,0 +1,84 @@
+\documentclass{article}
+\usepackage[x11names, rgb]{xcolor}
+\usepackage[<<textencoding>>]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes,automata}
+\usepackage{amsmath}
+<<startpreprocsection>>%
+\usepackage[active,auctex]{preview}
+<<endpreprocsection>>%
+<<gvcols>>%
+<<cropcode>>%
+<<docpreamble>>%
+\usepackage{xcolor}
+\usepackage{ amssymb }
+% \input{../colors_nicely_defined.tex}
+\definecolor{bondiblue}{rgb}{0.0, 0.58, 0.71}
+\definecolor{atomictangerine}{rgb}{1.0, 0.6, 0.4}
+\definecolor{ghostwhite}{rgb}{0.97, 0.97, 1.0}
+\renewcommand{\emptyset}{\varnothing}
+\usepackage{forest}
+\forestset{
+    safra/.style={
+        for tree={
+            draw,
+            rectangle split,
+            rectangle split parts=2,
+            rectangle split horizontal,
+            % rectangle split part fill={red, white},
+            fill=white,
+            rounded corners,
+            draw=black,
+            anchor=north,
+        },
+    },
+}
+
+\tikzset{
+    safrastate/.style={
+        thin,circle,fill=ghostwhite,
+    },
+    edge0/.style={
+        atomictangerine,
+        ultra thick,
+        every node/.style={
+            draw, circle,
+            text=black,
+            fill=white,
+        }
+    },
+    edge1/.style={
+        bondiblue,
+        ultra thick,
+        every node/.style={
+            draw, circle,
+            text=black,
+            fill=white,
+        },
+    },
+    % Removes extra space on initial nodes
+    % From: https://tex.stackexchange.com/questions/111554/how-to-avoid-superfluous-space-in-the-initial-state-of-a-tikz-automaton#comment245757_111558
+    every initial by arrow/.append style={anchor/.append style={shape=coordinate}},
+}
+
+\begin{document}
+\pagestyle{empty}
+%
+<<startpreprocsection>>%
+<<preproccode>>
+<<endpreprocsection>>%
+%
+<<startoutputsection>>
+\enlargethispage{100cm}
+% Start of code
+% \begin{tikzpicture}[anchor=mid,>=latex',join=bevel,<<graphstyle>>]
+\begin{tikzpicture}[>=latex',join=bevel,<<graphstyle>>]
+\pgfsetlinewidth{1bp}
+<<figpreamble>>%
+<<drawcommands>>
+<<figpostamble>>%
+\end{tikzpicture}
+% End of code
+<<endoutputsection>>
+%
+\end{document}

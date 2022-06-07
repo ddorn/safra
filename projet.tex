@@ -1,28 +1,887 @@
+\newcommand{\UseWhiteBackground}{1}  % Copy this to have a white document
 \input{../preambule.tex}
 
-\title{Modal logic, $\mu$-calcul, parity games and others}
+\title{Modal logic, $\mu$-calculus, parity games and others}
 \author{Diego Dorn}
 
 \newcommand{\infiniteWords}{\infseq{(\IB^n)}}
 \newcommand{\Sing}{\mathrm{Sing}}
 \newcommand{\Succ}{\mathrm{Succ}}
+\newcommand{\pathto}[1]{\overset{#1}\leadsto}
+\newcommand{\inlinesafra}[1]{
+    \pbox[c]{5cm}{
+    \begin{forest}safra,
+        [#1]
+    \end{forest}
+    }
+}
+\newcommand{\boite}[1]{[#1]\,}
+\newcommand{\diam}[1]{\langle#1\rangle\,}
+\newcommand{\Meaning}[1]{\llbracket#1\rrbracket}
+\newcommand{\Attacker}{\textsf{Attacker}\xspace}
+\newcommand{\Defender}{\textsf{Defender}\xspace}
+
+
 \newcommand{\spacedAutomata}[1]{\begin{center}
 \begin{tikzpicture}[automata, node distance=90pt]
 #1
 \end{tikzpicture}
 \end{center}}
 
+\forestset{
+    safra/.style={
+        for tree={
+            draw,
+            rectangle split,
+            rectangle split parts=2,
+            rectangle split horizontal,
+            % rectangle split part fill={red, white},
+            fill=white,
+            rounded corners,
+            draw=black,
+            anchor=north,
+        },
+    },
+}
+\newcommand{\safranode}[2]{\nodepart{one}#1\nodepart{two}#2}
+
+\tikzset{
+    safrastate/.style={
+        thin,circle,fill=ghostwhite,
+    },
+    edge0/.style={
+        atomictangerine,
+        ultra thick,
+        every node/.style={
+            draw, circle,
+            text=black,
+            fill=white,
+        }
+    },
+    edge1/.style={
+        bondiblue,
+        ultra thick,
+        every node/.style={
+            draw, circle,
+            text=black,
+            fill=white,
+        },
+    }
+}
+
+
 \begin{document}
 
 \maketitle
 
-\section{Beyond first order logic}
+\tableofcontents
+\listoftodos[Remaining to be done]
+\thispagestyle{empty}
+\newpage
+
+\setcounter{section}{-1}
+\section{Introduction}
+\section{Automata on infinite words}
+\subsection{Definitions}
+
+In the following sections
+we will make good use of automata that read infinite words.
+Those automata are very similar to the more common
+finite state machines but differ in how the accept
+or reject their inputs.
+
+\begin{definition}
+    Let $\Sigma$ be a finite alphabet.
+    An \emph{\w-automaton} $\Aa = (Q, \Sigma, \delta, q_0, Acc)$
+    consists of:
+    \begin{itemize}
+        \item a finite set state $Q$;
+        \item a finite alphapet $\Sigma$;
+        \item a transition function $\delta : Q \times \Sigma \to \Pp(Q)$;
+        \item an initial state $q_0 \in Q$;
+        \item a set $Acc \subseteq \infseq{Q}$ of accepting runs.
+    \end{itemize}
+
+    A run of the \w-automaton on an input $w \in \infseq\Sigma$
+    is any sequence of states $r \in \infseq{Q}$ such that
+    $r_0 = q_0$ and for all $n > 0$, $r_n \in \delta(r_{n-1}, w_n)$.
+    Such run is \emph{accepting} if it belongs to $Acc$.
+    Otherwise, if $r \notin Acc$, it is \emph{rejecting}.
+
+    We say that $\Aa$ accepts the infinite word $w \in \infseq{\Sigma}$
+    if there exists an accepting run on $w$.
+
+    An \w-automaton is \emph{deterministic} if for all
+    letters $s \in \Sigma$ and each state $q \in Q$,
+    there is exactly one transition from $q$ to another state
+    when $s$ is read. That is, $\abs{\delta(q, s)} = 1$.
+    Otherwise, it is \emph{non-deterministic}.
+
+\end{definition}
+
+This provides a general context in which automata can read infinite
+words. However it is too general because the accepting condition
+can be arbitrarly complex and even non computable.
+We will mostly look at three types of accepting conditions:
+
+\begin{multicols}{2}
+\begin{itemize}
+    \item Buchi conditions
+    \item Muller conditions
+    \item Parity conditions
+    % \item Rabin conditions
+\end{itemize}
+\end{multicols}
+
+Each of these conditions define the $Acc$ set
+from simpler data and rely on the set of states that
+a run passes through infinitely many times.
+To make the notation more convenient, given a sequence
+$w$, we write $\Inf(w)$ to denote the
+elements of $w$ that appear at infinitely many indices in $w$.
+
+\begin{definition}
+    Let $w \in \infseq{X}$ be sequence on any set $X$.
+    We definie $\Inf(w) \subset X$ as
+    \[
+        \Inf(w) := \setst{x \in X}{
+            \forall N \in \N~
+            \exists n > N~
+            w_n = x
+        }
+    \]
+\end{definition}
+
+\begin{definition}[Acceptance conditions]
+    An \w-automaton has a \emph{Büchi acceptance condition}
+    if for some set of states $F \subset Q$,
+    a run passes through $F$ infinitely many times:
+    \[
+        Acc := \setst{
+            r \in \infseq{Q}
+        }{
+            \Inf(r) \cap F \neq \emptyset
+        }.
+    \]
+
+    An \w-automaton has a \emph{Muller acceptance condition}
+    if for some collection of subset of the states $F \subset \Pp(Q)$,
+    a run is accepted if and only if the set of states that
+    are visited infinitely many times belongs to $F$.
+    \[
+        Acc := \setst{
+            r \in \infseq{Q}
+        }{
+            \Inf(r) \in F
+        }.
+    \]
+
+    An \w-automaton has a \emph{parity acceptance condition}
+    if for some function $p : Q \to \N$ called the priority function,
+    a run is accepted if and only if the state with the lowest priority
+    that is visited infinitely many times belongs has an even priority:
+    \[
+        Acc := \setst{
+            r \in \infseq{Q}
+        }{
+            \min_{q \in \Inf(r)} p(q) \text{ is even}
+        }.
+    \]
+\end{definition}
+
+\begin{remark}
+    As a shorthand, we will say ``a Büchi automaton''
+    insteand of ``an \w-automaton with a Büchi acceptance condition'',
+    and similarly for the other acceptance conditions.
+
+    Note that by default we consider non-deterministic automata,
+    so we will mention clearly every time we consider deterministic
+    automata.
+\end{remark}
+
+\todo{make a summary in a table}
+
+\begin{definition}
+    Let $A$ be an \w-automaton on an alphabet $\Sigma$.
+    The \emph{language} of $A$, denoted $\Ll(\Aa)$,
+    is the set of all infinite words accepted by $\Aa$.
+    \[
+        \Ll(A) := \setst{w \in \infseq{\Sigma}}{\Aa \text{ accepts } w}
+    \]
+
+    We say that a \w-language $L \subset \infseq{\Sigma}$ is
+    \emph{Büchi-definable} if there is a Büchi automaton $\Aa$
+    whose language is $L$,  that is, $\Ll(\Aa) = L$.
+\end{definition}
+
+\subsection{Equivalences}
+The goal of the follwing section is to show the equivalences
+between different notions of \w-automata.
+Two kinds of \w-automata, for instance Muller and parity automata
+are equivalent if they can recognise the exactly same languages,
+that is, a language is Muller-definable if and only if it parity-definable.
+We will show the following:
+
+\begin{theorem}
+    \label{thm:all-automata-are-the-same}
+    Let $L \subset \infseq\Sigma$ be a language.
+    \[
+        \begin{array}{c}
+        L \text{ is recognised by a Büchi automaton} \\
+        \iff \\
+        L \text{ is recognised by a deterministic Muller automaton} \\
+        \iff \\
+        L \text{ is recognised by a deterministic parity automaton} \\
+        \end{array}
+    \]
+
+    However, there are languages that are recognised by the above
+    automata that cannot be recognised with a Büchi automaton.
+\end{theorem}
+
+This section will focus on showing all those equivalences,
+except that languages recognised by a Büchi automaton
+con be recognised by a deterministic Muller automaton.
+Indeed, this proof is much more complex than the others
+andwill be carried in \autoref{sec:safra}.
+
+
+\begin{lemma}
+    Let $\Aa$ be a deterministic parity automaton,
+    then there exists a deterministic Muller automaton $\Mm$
+    such that $\Ll(\Aa) = \Mm(\Mm)$.
+\end{lemma}
+\begin{proof}
+    Let $\Aa = (Q, \Sigma, \delta, q_0, p)$ be parity automaton.
+    It acceptance condition is also a Muller acceptance condition as we can take
+    \[
+        \Ff = \setst{F \subset Q}{\min_{q \in F} ~p(q) \even}
+    \]
+    which is a Muller condition.
+\end{proof}
+
+\begin{lemma}
+    Let $\Aa$ be a deterministic parity automaton,
+    then there exists a Büchi automaton $\Bb$
+    such that $\Ll(\Aa) = \Mm(\Bb)$.
+\end{lemma}
+\begin{proof}
+    Given $\Aa = (Q, \Sigma, \delta, q_0, p)$ a parity automaton,
+    we build a Büchi automaton $\Bb = (Q', \Sigma, \delta', q'_0, F)$ that recognises the same language.
+    Let $Q_i$ be the states of $\Aa$ of priority $i$
+    and $Q_{\geq i} := \setst{q \in Q}{p(q) \geq i}$ the states of $\Aa$ of priority greater than $i$.
+    We set \begin{itemize}
+        \item The set of states of \Bb is the disjoint union of the $Q_{\geq i}$, for all even $i$, plus one
+        copy of $Q$: \[
+                Q' = Q \sqcup \bigsqcup_{i \even} Q_{\geq i} =
+                Q \sqcup \setst{(q, i) \in Q \times \N}{p(q) \geq i \wedge i \even}
+            \]
+        \item The initial state is $q_0' = q_0 \in Q'$.
+        \item The accepting states of \Bb are the states of priority $i$ in the copy of $Q_{\geq i}$:
+        \[
+            F = \bigsqcup_{i \even} Q_i = \setst{(q, i) \in Q'}{p(q) = i}
+        \]
+        \item In each of the $Q_{\geq i}$,
+            the transition function is the same as in $\Aa$,
+            and the transitions from the copy of $Q$ are the same as in $\Aa$ but
+            the automaton can also decide to move to one of the $Q_{\geq i}$.
+            So for all all $q \in Q, i \in \N$ and $s \in \Sigma$,
+            \[
+                \delta'(q, s) = \delta(q, s) \cup \bigcup_{i \even} (\delta(q, s) \cap Q_{\geq i})\times \set{i}
+                \] and \[
+                \delta'((q, i), s) = \bigparenthesis{\delta(q, s) \cap Q_{\geq i}} \times \set{i}
+            \]
+    \end{itemize}
+
+    \paragraph*{Correctness of the construction} Let $w \in \Ll(\Aa)$ be and $r \in \infseq{Q}$
+    be the corresponding accepting run. Let $p_{min}$ be the minimum prioritythat apprears infinitely many times
+    in $r$ and let $N = \min \setst{n \in \N}{\forall k \geq n~ p(r_k) \geq p_{min}}$
+    be the time from which the run never visit a state with a priority lower than $p_{min}$.
+    Then the run $q := r\restr{N-1} \concat (r_N, p_{min}) \concat (r_{N+1}, p_{min}) \concat \dots$
+    is an accepting run in \Bb.
+
+\end{proof}
+
+\todo{add muller -> büchi}
+
+
+\subsection{The Safra construction}
+\label{sec:safra}
+
+There is one equivalence between automata that we did not prove
+in the last section: every language that is recognised by a
+non-deterministic Büchi automaton can be recognised by a
+deterministic Muller automaton. This result concludes
+the proof of \ref{thm:all-automata-are-the-same} and
+is the most important result that we will use in the sequel.
+Indeed it makes the complementation of a non-deterministic Büchi automaton
+simpler.
+The proof is also very interesting in itself and makes use of
+Safra trees.
+
+\begin{definition}
+    Let $Q$ be any finite set.
+    A \emph{Safra tree} on $Q$ is a finite tree
+    whose children are ordered and each node has:
+    \begin{itemize}
+        \item a name, $n \in \set{0, \dots, 2\abs{Q}}$
+        \item a label, $l \subset Q$
+        \item an optional marker $!$
+    \end{itemize}
+    and satifies the following constraints:
+    \begin{itemize}
+        \item Every node has a distinct name.
+        \item No node can have a label of $\emptyset$, except the root.
+        \item The label of a node node is a subset of the label of its parent.
+        \item Labels of siblings node are disjoint.
+        \item The union of labels of siblings node is a proper subset of the label of their parent.
+    \end{itemize}
+\end{definition}
+
+The follwing trees are Safra trees on $Q = \set{A, B, C, D}$, where the name is written
+on the left and the label on the right:
+
+\begin{center}
+\begin{forest}safra,
+[,phantom, s sep = 1cm
+    [\safranode{0}{$\emptyset$}]
+    [\safranode{0}{AB}
+        [\safranode{1}{B}
+        ]]
+    [\safranode{3}{ABC !}
+        [\safranode{2}{A !}]
+        [\safranode{4}{B}]
+    ]
+    [\safranode{0}{ABCD}
+        [\safranode{2}{C}]
+        [\safranode{3}{AD !}
+            [\safranode{4}{D}]
+        ]
+    ]
+]
+\end{forest}
+\end{center}
+
+We can also have trees that are \emph{not} Safra trees.
+For instance, each of the following trees violates exactly one of the
+condition of a Safra tree:
+
+
+\begin{center}
+\begin{forest}safra,
+[,phantom, s sep = 1cm
+    [\safranode{0}{ABCD}
+        [\safranode{2}{$\emptyset$}]
+        [\safranode{3}{AD !}
+            [\safranode{4}{D}]
+        ]
+    ]
+    [\safranode{0}{AB}
+        [\safranode{0}{B}
+        ]]
+    [\safranode{0}{AB}
+        [\safranode{1}{AB}
+        ]]
+    [\safranode{0}{AB}
+        [\safranode{1}{C}
+        ]]
+    [\safranode{3}{ABC !}
+        [\safranode{2}{A !}]
+        [\safranode{4}{AB}]
+    ]
+]
+\end{forest}
+\end{center}
+
+Note, that, because we consider the order of childrens, those
+two Saffra trees are different:
+
+\begin{center}
+\begin{forest}safra,
+[,phantom, s sep = 1cm
+    [\safranode{0}{ABC}
+        [\safranode{1}{A}]
+        [\safranode{2}{B}]
+    ]
+    [\safranode{0}{ABC}
+        [\safranode{2}{B}]
+        [\safranode{1}{A}]
+    ]
+]
+\end{forest}
+\end{center}
+This fact will be important for the construction, as the
+order of the children will coincide with the order they are
+added.
+
+\begin{lemma}
+    Given a non-deterministic Büchi automaton $\Bb$,
+    there is an deterministic Muller automaton $\Mm$ that
+    recognises the same languages as $\Bb$, that is, $\Ll(\Bb) = \Ll(\Mm)$.
+\end{lemma}
+
+\begin{proof}
+    Let $\Bb = (Q, \Sigma, \delta, q_0, F)$ be a non-deterministic Büchi automaton.
+    We build a deterministic automaton $\Mm = (Q', \Sigma, \delta', q'_0, \Ff')$
+    with \begin{itemize}
+        \item The states $Q'$ is the set of Safra trees on $Q$.
+        \item The alphabet $\Sigma$ stays the same.
+        \item The initial state is the Safra tree with
+            only a root labeled with $\Bb$'s initial state $q_0$:
+            \begin{center}
+            \begin{forest}safra,
+                [\safranode{0}{$q_0$}]
+            \end{forest}
+            \end{center}
+        \item The transition function is deterministic
+            and associates to each Safra tree $T$ and and input
+            letter $s$ a new safra tree in 5 steps:
+            \begin{enumerate}
+                \item \emph{Branch off accepting states}: for each node labeled $l$ of $T$,
+                    create a child node with label $F \cap l$ if it is not empty,
+                    and take any name in $[1, \dots, 2\abs{Q}]$ that is not already taken.
+                \item \emph{Power set}: replace each label $l \subset Q$ of $T$
+                    by $\bigcup_{q \in l} \delta(q, s)$,
+                    the set of state that are reachable from some state in $l$ while reading the letter $s$.
+                \item \emph{Remove states}:
+                    remove from each label the states that appear also in older siblings.
+                    Older siblings are nodes on the left of a given node, or equivalently
+                    nodes with a smaller index in the siblings list.
+                    At that point, labels of siblings are disjoints.
+                \item \emph{Remove empty}:
+                    remove all nodes that have an empty label, except the root.
+                \item \emph{Mark nodes}: mark each node with a $!$
+                    if and only if the union of its children labels
+                    is the same as the parent label.
+                    In that case, remove the whole tree below the marked node.
+            \end{enumerate}
+        \item The accepting condition is given
+            by the familly $\Ff' \subset \Pp(Q')$.
+            A set $S \subset Q'$ of Safra trees belongs to $\Ff'$
+            if some node name appears in each tree $s \in S$
+            and in some tree $s \in S$, the node with this names carries a $!$ marker.
+    \end{itemize}
+
+    For detailed examples of this construction, see \autoref{sec:safra-examples}.
+    We now prove that $\Ll(\Bb) = \Ll(\Mm)$ by double inclusion.
+
+    Let $w \in \Ll(\Bb)$ be an infinite word.
+    Since $w \in \Ll(\Bb)$, there is a run of the automaton $\Bb$
+    that encounters infinitely many times an accepting state $q \in F$.
+    We look at the corresponding run $r \in \infseq{Q'}$ in $\Mm$ and show that it
+    is accepting. Each of $r_0$, $r_1$, \dots is a Safra tree.
+    If the root node is marked infinitely many times with a
+    $!$ in $r$, then $\Mm$ accepts $w$.
+    Otherwise, at some point $q$ is put on
+    a son of the tree, and the Büchi run stays in a fixed
+    son of the root.
+    Indeed, every time the Büchi run encounters $q$,
+    the root has a son with label $q$, as a result from
+    either the \textit{Power set} or \textit{Branch off accepting states}
+    rules. This node can be removed only by the \textit{Remove empty}
+    or \textit{Remove states} rules, but since there is a Büchi run,
+    the \textit{Power set} rule doesn't produce empty state after some point,
+    and therefore the \textit{Remove empty} can only be applied as many times
+    as the \textit{Remove states} rule. Finally, the \textit{Remove states}
+    rule can be applied only finitly many times, because it corresponds
+    push the Büchi run in an older sibling.
+    We can then proceed recursively: either $k_1$ is marked infinitely
+    many times and then $\Mm$ accepts, or it has a son $k_2$ in which the run ultimatelly stays.
+    Since Safra trees have a depth of at most $|Q|$, there is a step
+    at which a node is marked infinitely many times, and thus $\Mm$ accepts
+    $w$.
+    \todo{Should I indroduce more formalism?}
+    \todo{Maybe I can use $\Inf(r)$ for a cleaner proof (instead of the "at some point")}
+
+    For the other inclusion, let $w \in \Ll(\Mm)$ be an inifinite word
+    and $r \in \infseq{Q'}$ the corresponding accepting run in $\Mm$.
+    We need to construct a path
+    $q \in \infseq{Q}$ in $\Bb$ that visits
+    an accepting state infinitely many times.
+    To that extent, the following claim will provide a
+    way to find paths in $\Bb$ from paths in $\Mm$.
+
+    \begin{claim}
+        Let $n < m$ be integers and $N$ be the name of a node
+        that occurs in all the Safra trees $r_n, r_{n+1}, \dots, r_m$.
+        Let also $P \subset Q$ be the label of node $N$ in $t_n$
+        and $R \subset Q$ the label of node $N$ in $t_m$.
+
+        Then for all states $r \in R$ there exists
+        a path from $p \in P$ to $r$ in the automaton $\Bb$
+        that can be taken on input $w_n, \dots, w_{m-1}$.
+        We write
+        \todo{Define the notation for states above}
+        \[
+            \Bb : P \pathto{w_n^m} R
+            \quad\text{ for }\quad
+            \forall r \in R~
+            \exists p \in P~
+            \parenthesis{
+                \Bb : p \pathto{w_n^m} r
+            }
+        \]
+
+        Furthermore, if the node $N$ is marked in both $r_n$
+        and $r_m$, then any such path visits
+        at least one accepting state of $\Bb$.
+    \end{claim}
+    \begin{proof}
+        We this by induction on $m - n$. For the base case,
+        if $m = n + 1$, each element of $R$ was produced by the \textit{Power set}
+        rule, which means precisely that, $r \in R$ if and only if
+        there is some $p \in P$ such that $r \in \delta(p, w_n)$.
+        For the recursive case, let $P'$ be the label of node $N$ in
+        $t_{m-1}$. By hypothesis, $\Bb : P \pathto{w_n^{m-1}} P'$
+        and $\Bb : P' \pathto{w_{m-1}^m} R$. Since the relation is clearly
+        transitive, it follows that $\Bb : P \pathto{w_n^m} R$.
+
+        For the second part, let $S \subset Q$
+        be the label of a son of node $N$. Since this son
+        has been created by the \textit{Branch accepting} rule,
+        it shows that every state $s \in S$ is reachable from $P$
+        through an accepting state. If $R$ is marked, it means
+        that the union of $N$ children is exactly $R$, and therefore
+        every state in $R$ is reachable from $P$ via an accepting state.
+    \end{proof}
+
+    Since $\Mm$ accepts $w$,
+    there is a node name $N$ that appears in every
+    tree of $\Inf(r)$, and is marked with a $!$ in
+    at least one tree of $\Inf(r)$.
+    Let $P_0, P_1, \dots$ be the sequence of labels of $N$
+    every time $N$ is marked. We have
+    \[
+        \set{q_0} \pathto{u_0} P_1 \pathto{u_1} P_2 \pathto{u_2} P_3 \pathto{} \dots
+    \]
+    where the $u_k$ are segments of $w$.
+    Let $p_i \in Q^{\abs{u_i}}$ be the set of paths from $P_i$ to $P_{i+1}$
+    that visit an accepting state on input $u_i$.
+    Those are the path realise the fact that $\Bb : P_i \pathto{u_i} P_{i+1}$.
+    Now, if we take two paths $v \in P_i$ and $v' \in P_{i+1}$,
+    those might be stitched together to corresponds to
+    a path on input $u_i \concat u_{i+1}$, if and only if
+    $v_{\abs{u_i}} = v'_0$. In that case we write $v \sim v' :=
+    v \concat v'_1 v'_2 \dots v'_{|v'|-1}$.
+
+    Let $T$ be the set of paths that can that start at $q_0$
+    and can be continued by paths from the $p_i$:
+    \[
+        T = \bigcup_{k=0}^{\infty} \setst{
+                v_0 \sim v_1 \sim \dots \sim v_k
+            }{
+                \begin{array}{c}
+                    \forall i \leq k~
+                    v_i \in p_i \\
+                    \wedge \\
+                    v_0, \dots v_k
+                    \text{ can be stitched}
+                \end{array}
+            }
+    \]
+    We can consider $T$ as a tree, by making it closed under prefix.
+    In this case, each node of $T$ corresponds to a state in $\Bb$,
+    This tree is infinite,
+    since it has branches of unbounded length, and is finitely branching,
+    because the automaton $\Bb$ has finitely many states.
+    By König's lemma there exists an infinite path $q$ in $T$.
+    This path $q$ visits an accepting state infinitely many times
+    on input $w$ because it is composed of paths from the sets $p_i$
+    which each contain at least one visit of an accepting state.
+    Therefore $q$ is an accepting run, and $w$ is accepted by $\Bb$.
+\end{proof}
+
+This concludes the proof of \autoref{thm:all-automata-are-the-same}:
+
+\begin{theorem*}[\ref{thm:all-automata-are-the-same}]
+    Let $L \subset \infseq\Sigma$ be a language.
+    \[
+        \begin{array}{c}
+        L \text{ is recognised by a Büchi automaton} \\
+        \iff \\
+        L \text{ is recognised by a deterministic Muller automaton} \\
+        \iff \\
+        L \text{ is recognised by a deterministic parity automaton} \\
+        \end{array}
+    \]
+
+    However, there are languages that are recognised by the above
+    automata that cannot be recognised with a Büchi automaton.
+\end{theorem*}
+
+\begin{theorem}(Closure properties of Büchi automata)
+    \label{thm:closure-of-buchi}
+    The class of languages recognised by Büchi automata
+    is closed under the operation of \begin{itemize}
+        \item finite union;
+        \item finite intersection;
+        \item complementation.
+    \end{itemize}
+\end{theorem}
+\begin{proof}
+    \todo{Add proof of closure of Büchi automata}
+\end{proof}
+
+\subsection{Example of the Safra construction}\label{sec:safra-examples}
+
+In this section, we we look at a few instances of the Safra construction.
+The following Büchi automaton on the language $\set{0, 1}$ recognises
+all the infinite words that have infinitely many \verb|1| but only finitely many \verb|11|.
+
+\begin{center}
+    \input{fig/buchi-1-no-11.tex}
+\end{center}
+
+To facilitate reading of the automata, we always use orange arrows for
+transitions when reading the letter \verb|0|, and blue arrows for the letter \verb|1|,
+and we may sometimes omit the labels. The initial state is denoted by
+an incoming black arrow and finite states are double circled.
+
+Converting this automaton to a deterministic Müller automaton,
+we obtain the following:
+
+\begin{center}
+    \input{fig/muller-1-no-11.tex}
+\end{center}
+
+Which accepts a run if the set of states that occur infinitely many times
+is any subset of
+\[
+\set{
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{AB} [\safranode{1}{B}]]
+\end{forest}}
+~~
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{AB} [\safranode{1}{B !}]]
+\end{forest}}
+~~
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{ABC} [\safranode{1}{C}]]
+\end{forest}}
+}
+\]
+
+However, only two of those subsets are relevant here,
+because they are the only ones corresponding to loops containing
+a node with \verb|!| in the graph of the Müller automaton.
+Those two sets are
+\[
+\set{
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{AB} [\safranode{1}{B}]]
+\end{forest}}
+~~
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{AB} [\safranode{1}{B !}]]
+\end{forest}}
+~~
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{ABC} [\safranode{1}{C}]]
+\end{forest}}
+}
+\andquad
+\set{
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{AB} [\safranode{1}{B !}]]
+\end{forest}}
+~~
+\pbox[c]{2cm}{\begin{forest}safra,
+    [\safranode{0}{ABC} [\safranode{1}{C}]]
+\end{forest}}
+}
+\]
+
+We now look at how to compute the transitions table of the Müller automaton.
+The initial state is \inlinesafra{\safranode{0}{A}} since the initial state
+of the Büchi automaton is A.
+Then, whether a \verb|0| or a \verb|1| is read,
+it is possible to transition to state A and B.
+All rules except the \textit{Power set} rule do nothing here:
+
+\begin{center}
+    \begin{forest}safra,
+        [{\nodepart{one}0\nodepart{two}A}]
+    \end{forest}
+    $\xto{\substack{\text{Branch}\\\text{accepting}}}$
+    \begin{forest}safra,
+        [{\nodepart{one}0\nodepart{two}A}]
+    \end{forest}
+    $\xto{\substack{\text{Power}\\\text{set}}}$
+    \begin{forest}safra,
+        [{\nodepart{one}0\nodepart{two}AB}]
+    \end{forest}
+    $\xto{\substack{\text{Make}\\\text{disjoint}}}$
+    \begin{forest}safra,
+        [{\nodepart{one}0\nodepart{two}AB}]
+    \end{forest}
+    $\xto{\substack{\text{Remove}\\\text{empty}}}$
+    \begin{forest}safra,
+        [{\nodepart{one}0\nodepart{two}AB}]
+    \end{forest}
+    $\xto{\substack{\text{Mark}\\\text{nodes}}}$
+    \begin{forest}safra,
+        [{\nodepart{one}0\nodepart{two}AB}]
+    \end{forest}
+\end{center}
+
+We now need to compute the transitions from \inlinesafra{\safranode{0}{AB}}.
+When the autmaton reads \verb|0| in the state A or B,
+we can reach the state A (from A) or B (from both A and B).
+The other rules don't apply here, so the transition is
+$\inlinesafra{\safranode{0}{AB}} \xto{~0~} \inlinesafra{\safranode{0}{AB}}$.
+However, if \verb|1| is read, the set of reachable states
+is $\set{A, B, C}$. The transition is thus
+$\inlinesafra{\safranode{0}{AB}} \xto{~1~} \inlinesafra{\safranode{0}{ABC}}$.
+
+The transition from \inlinesafra{\safranode{0}{ABC}} on input \verb|0|
+makes also use of the \textit{Branch accepting} rule,
+since C is an accepting state. According to this rule,
+we add a new node with a name that is not yet present in the
+tree, here 1, and create a son with label the set of
+accepting states of the node 0, which is just $\set{C}$.
+We then apply the \textit{Power set} rule to each node.
+The new node that we have added, \inlinesafra{\safranode{1}{B}},
+tells us that if we are in B, then we have seen an accepting node (here C) before.
+
+\begin{center}
+\begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}ABC}]
+\end{forest}
+$\xto{\substack{\text{Branch}\\\text{accepting}}}$
+\begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}ABC}
+        [{\nodepart{one}1\nodepart{two}C}]]
+\end{forest}
+$\xto{\substack{\text{Power}\\\text{set}}}$
+\begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}AB}
+        [{\nodepart{one}1\nodepart{two}B}]]
+\end{forest}
+\end{center}
+
+If we continue from this Safra tree, and read \verb|0| or \verb|1|
+we obtain the two following transitions by using only the \textit{Power set}:
+\[
+    \inlinesafra{\safranode{0}{AB} [\safranode{1}{B}]}
+    \xto{~0~} \inlinesafra{\safranode{0}{AB} [\safranode{1}{B}]}
+    \andquad
+    \inlinesafra{\safranode{0}{AB} [\safranode{1}{B}]}
+    \xto{~1~} \inlinesafra{\safranode{0}{ABC} [\safranode{1}{C}]}
+\]
+
+
+Finally we look at what happens if we read \verb|1| from \inlinesafra{\safranode{0}{ABC} [\safranode{1}{C}]},
+because every rule is used. Since both node 0 and 1 contain C, we need to create a new node below them
+that contain C. Since the Büchi automaton has three nodes,
+we pick non-used labels in $\set{0, 1, \dots, 6}$ and create two a new child
+for each. We then apply the \textit{Power set}
+rule to each of the four nodes.
+
+\begin{center}
+\begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}ABC}
+      [{\nodepart{one}1\nodepart{two}C}]]
+    \end{forest}
+    $\xto{\substack{\text{Branch}\\\text{accepting}}}$
+    \begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}ABC}
+      [{\nodepart{one}1\nodepart{two}C}
+        [{\nodepart{one}3\nodepart{two}C}]]
+      [{\nodepart{one}2\nodepart{two}C}]]
+    \end{forest}
+    $\xto{\substack{\text{Power}\\\text{set}}}$
+    \begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}AB}
+      [{\nodepart{one}1\nodepart{two}B}
+        [{\nodepart{one}3\nodepart{two}B}]]
+      [{\nodepart{one}2\nodepart{two}B}]]
+    \end{forest}
+\end{center}
+
+Now, both node 1 and 2 contain B, so we remove B from
+the newest node, which is 2 in this case. The idea behind
+this is that we do not need to keep track multiple times of what
+happens after we see state B, and all the information about runs That
+visit B will already be contained in node 1 or its children.
+We then remove node 2 entirelywith the \textit{Remove empty} rule.
+Finally, the \textit{Mark nodes} rule is used on node 1, since
+its only child has the same label. We therefore remove node 3 and add a
+$!$ marker to node 1.
+
+\begin{center}
+    \begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}AB}
+      [{\nodepart{one}1\nodepart{two}B}
+        [{\nodepart{one}3\nodepart{two}B}]]
+      [{\nodepart{one}2\nodepart{two}B}]]
+    \end{forest}
+    $\xto{\substack{\text{Make}\\\text{disjoint}}}$
+    \begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}AB}
+      [{\nodepart{one}1\nodepart{two}B}
+        [{\nodepart{one}3\nodepart{two}B}]]
+      [{\nodepart{one}2\nodepart{two}$\emptyset$}]]
+    \end{forest}
+    $\xto{\substack{\text{Remove}\\\text{empty}}}$
+    \begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}AB}
+      [{\nodepart{one}1\nodepart{two}B}
+        [{\nodepart{one}3\nodepart{two}B}]]]
+    \end{forest}
+    $\xto{\substack{\text{Mark}\\\text{nodes}}}$
+    \begin{forest}safra,
+    [{\nodepart{one}0\nodepart{two}AB}
+      [{\nodepart{one}1\nodepart{two}B !}]]
+    \end{forest}
+\end{center}
+
+If we look at all the path the Büchi automaton might have taken
+since the creation of this node, the $!$ mark indicates
+that there is a way to reach any state on the label of the node
+and visit and accepting state along the way.
+It doesn't mean that all paths since the creation of the node
+did visit an accepting state, but there's some path that did.
+This is also true if we consider the possible paths since
+the node was previously marked,
+as all children have been removed
+when marking the node, and have since been re-created by visiting an
+accepting state (via the \textit{Branch accepting} rule).
+
+\paragraph*{}
+\todo{Put a large automaton here}
+Notice that this construction can produce very complex
+automata, even if there exists a simpler Muller automaton
+for the same language. For instance,
+the following Büchi automaton
+\begin{center}
+\begin{tikzpicture}[node distance=2.5cm]
+    \node[state, initial] (A) {A};
+    \node[right of=A] (ghost) {};
+    \node[state, right of=A] (B) {B};
+    \node[state, below of=A] (D) {D};
+    \node[state, accepting, right of=B] (C) {C};
+    \node[state, right of=D] (E) {E};
+    \node[state, below of=D] (F) {F};
+    \node[state, accepting, below of=E] (G) {G};
+    \path[->] (A) edge[loop above, edge0] (A)
+                edge[loop below, edge1] (A)
+                edge[bend left, edge0] (B)
+                edge[bend right, edge1] (B)
+                edge[bend left, edge0] (D)
+                edge[bend right, edge1] (D)
+              ;
+\end{tikzpicture}
+\end{center}
+
+
+
+\section{Monadic second order logic}
+\subsection{Definition}
 
 The goal of this section is to introduce the reader
 to some extensions of first order logic (FO),
 and most importantly to develop monadic second order logic.
-
-\subsection{Second order logic}
 
 In first order logic, quantifications happen only over the
 domain elements.
@@ -110,9 +969,7 @@ For instance, the following formula are syntaxically valid:
 We will not study much of second order logic, but instead
 look at one of its fragment, monadic second order logic.
 
-\subsection{Monadic second order logic}
-
-Monadic second order logic, or MSO is an extension of
+\paragraph*{Monadic second order logic} or MSO is an extension of
 fisrt order logic and a restriction of second order logic.
 In MSO, valid formulas are formulas of second order logic
 where second order quantification happens only on unary relations.
@@ -121,6 +978,8 @@ of the domain (first-order quantification)
 or over subsets of the domain (second-order quantification).
 
 The semantics of MSO are the same as SO semantics.
+
+\todo{Add exemples of MSO formulas}
 
 % There are two things that are remarkable about
 % this logic, when considered together:
@@ -132,7 +991,9 @@ The semantics of MSO are the same as SO semantics.
 % \end{itemize}
 
 
-\subsection{S1S: infinite strings in MSO}
+
+\subsection{Decidability}
+
 
 The decidability problem for monadic second order logic
 in general is impossible, because it contains first order logic.
@@ -150,7 +1011,7 @@ for reasons that will be clear in the next section.
     Let $P_1, \dots, P_n \subset \N$. A model of S1S is
     $\Mm = \set{\N, 0, +1, <, P_1, ..., P_n}$,
     where the domain is always \N, $S^\Mm = +1$ is the successor function
-    which maps $x$ to $x+1$, $<^\Mm = <$ is interpreted as the usual order
+    which maps $x$ to $x+1$, $<^\Mm$ is interpreted as the usual order
     on \N, and $P_i^\Mm = P_i$.
 
 \end{definition}
@@ -165,15 +1026,22 @@ $0$'s and $1$'s, and if the $k$-th element of $i$-th letter is a 1,
 then $P_i(k)$ holds.
 \end{remark}
 
-The reason why S1S is often called the theory of infinite strings
-is because if for each $i \in \N$, there is exactly
-one of the $\P_1(i), \dots, P_n(i)$, then
+The reason why S1S is called the theory of infinite strings
+is because its models can be considered as words on the
+alphabet $\Pp(\set{P_1, \dots, P_n})$.
+
+An other reason is that
+if for each $i \in \N$, there is exactly
+one of the $P_1(i), \dots, P_n(i)$ that hold, then
 we can represent the model as an infinite string
 on the alphabet $\Sigma = \set{P_1, \dots, P_n}$.
 
+Those two reasons will be used to change our setting from
+models of S1S to and from \w-languages recognised by automata.
+
 \paragraph{}
-The semantics of S1S are the same as MSO. In particular,
-we use \N as the universe for first order variables
+The semantics of S1S are the same as MSO. However,
+we only use \N as the universe for first order variables
 and $2^\N$ as the universe for second order variables.
 If $w \in \infiniteWords$ is an infinite word inducing
 the model $\Mm = \set{\N, 0, +1, <, P_1, ..., P_n}$,
@@ -203,42 +1071,6 @@ we write \[
 \end{example}
 
 
-
-
-\begin{definition}
-    A \emph{Büchi automaton} is similar to a non-deterministic pushdown automaton.
-    It consists of:
-    \begin{itemize}
-        \item a set of states $Q$
-        \item a finite alphabet $\Sigma$
-        \item a transition function $\delta : Q \times \Sigma \to \Pp(Q)$
-        \item an initial state $q_0 \in Q$
-        \item a set of accepting state $F \subset Q$.
-    \end{itemize}
-
-    A \emph{run} of the automaton
-    on a word $w \in \infseq{\Sigma}$
-    is a sequence of states $r \in \infseq{Q}$
-    such that $r_0 = q_0$ and for all $n \in \N, r_{n+1} \in \delta(r_n, w_n)$.
-
-    The automaton accepts the word $w$ if there exists run on $w$
-    visits an accepting state infinitely many times.
-
-    The \w-language of an automaton is the set of words
-    that are accepted by the automaton.
-\end{definition}
-
-\begin{definition}
-    A \emph{deterministic Büchi automaton} is a Büchi automaton
-    where the transition function is deterministic, that is,
-    for all state $q \in Q$ and letter $l \in \Sigma$,
-    $\abs{\delta(q, l)} \leq 1$.
-\end{definition}
-
-
-We say that a \w-language $L \subset \infseq{\Sigma}$ is
-\emph{Büchi-definable} if there is a Büchi automaton
-whose language is $L$.
 
 \begin{lemma}\label{lemma:buchi-definable}
     A Büchi-definable \w-language is S1S-definable.
@@ -334,7 +1166,7 @@ as $\text{S1S}_0$ formulas.
     A formula is a $\text{S1S}_0$ formula if
     \begin{itemize}
         \item its atomic formulas are one of $X \subseteq Y$,
-            $\Succ{X, Y}$ or $\Sing{X}$, for $X$ and $Y$ some second
+            $\Succ(X, Y)$ or $\Sing(X)$, for $X$ and $Y$ some second
             order variable. We interpret that $X \subseteq Y$ holds
             if $X$ is a subset of $Y$, $\Succ(X, Y)$ holds if
             $(X, Y) = (\set{a}, \set{a+1})$ for some $a \in \N$ and
@@ -353,7 +1185,7 @@ as $\text{S1S}_0$ formulas.
 \begin{proof}
     First, we know that we can eliminate all conjunction with De Morgan's
     laws and replace all impliations with their definition. Similarly, we can eliminate universal quantifers
-    since $\forall x \psi(x) \iff \neg \exists x \neg \psi(x)$.
+    since $\forall x\, \psi(x) \iff \neg \exists x\, \neg \psi(x)$.
 
     We can eliminate the constant $0$, by using a fresh variable (say $z$)
     that does not appear in $\phi$. Then, $\phi$ is equivalent to
@@ -361,6 +1193,7 @@ as $\text{S1S}_0$ formulas.
         \exists z~ \bigparenthesis{\neg\exists x\, (x < z) \wedge \phi_{[z/0]}}
     \]
     where $\phi_{[z/0]}$ is the formula where every 0 of $\phi$ is replaced by $z$.
+    \todo{Be consistant for the substitutions. Do I prefer $[Z/0]$ or $[Z := 0]$?}
 
     The formula $x < y$ is equivalent to \[
         \forall X~ \Bigparenthesis{
@@ -384,9 +1217,9 @@ as $\text{S1S}_0$ formulas.
     that constist only of $S(x) = y$, $X(x)$, connectors $\neg$ and $\wedge$
     and first and second order existential quantifers.
     In order to remove completely first order variables and quantifers,
-    we need to modify at the same time every occurence of first order variables:
+    we need to modify every occurence of first order variables:
     \begin{itemize}
-        \item If $\phi$ is of the form $\exists x \psi(x)$, we replace it by
+        \item If $\phi$ is of the form $\exists x~ \psi(x)$, we replace it by
             $\exists X ~ \Sing(X) \wedge \psi_{[X/x]}$ where $X$ is a variable not apearing
             in $\psi$.
         \item If $\phi$ is $X(y)$, we replace it by $\Sing(Y) \wedge Y \subseteq X$
@@ -403,79 +1236,454 @@ as $\text{S1S}_0$ formulas.
     Let $L$ be an \w-language. By \autoref{lemma:buchi-definable},
     we know that if it is Büchi-definable, it is S1S-definable.
 
-    For the other direction, will show only for the case
-    where the alphabet is $\IB = \set{0, 1}$ as the proof
-    in the general case adds only more verbose formalism and no new ideas.
-
-    By \autoref{lemma:s1s-is-s1s-0}, formulas of S1S
+    For the other direction,
+    % will show only for the case
+    % where the alphabet is $\IB = \set{0, 1}$ as the proof
+    % in the general case adds only more verbose formalism and no new ideas.
+    by \autoref{lemma:s1s-is-s1s-0}, formulas of S1S
     are as expressive as formulas of $\text{S1S}_0$,
     so it suffices construct a Büchi automaton
-    that corresponds each $\text{S1S}_0$ formula.
+    that corresponds to each $\text{S1S}_0$ formula.
     We consider formulas of the form
-    $\phi(P, X_1, \dots, X_m)$
+    $\phi(P_1, \dots, P_n, X_1, \dots, X_m)$
     where \begin{itemize}
-        \item the $P$ is a second order variable that will
-            represent the positions of the \w-word where there is a 1.
+        \item the $P_i$ are the second order variables that
+            correspond to the \w-word.
         \item the $X_i$ are second order free variables.
     \end{itemize}
-    We will abreviate this as $\phi(P, \vec X)$,
-    and for each such formula, we construct an equivalent
-    automaton on the language $\IB \times \IB^m = \IB^{m+1}$.
-    By equivalent, we mean that $\phi$ holds when given any $P, \vec X$
-    if and only if the automaton accepts the word $(P, \vec X)$.
+    We will abreviate this as $\phi(\vec P, \vec X)$,
+    as it does not matter for the construction
+    which of the second order variable is which.
+    It is only relevant to keep in mind that some
+    of those variables correspond to the unary relations
+    of the model.
+
+    For each such formula, we construct an
+    automaton on the language $\IB^n \times \IB^m = \IB^{n+m}$
+    such that given any $\vec P$ and $\vec X$, $\phi$ holds
+    if and only if the automaton accepts the word $(\vec P, \vec X)$.
 
     We proceed by induction on the height of the formula $\phi$.
-
     \begin{itemize}
-        \item yes.
-    \end{itemize}
-
-
-
-    \begin{itemize}
-        \item If $\phi(P, x, y)$ is $x = y$, an automaton
-            that recognises the language $\IB^3$ is
+        \item If $\phi(X, Y)$ is $X \subseteq Y$,
+            a corresponding automaton is:
             \begin{center}
-            \begin{tikzpicture}[automata, node distance=90pt]
-                \node[state, initial] (q0) at (0, 0) {};
-                \node[state, accepting] (q1) [right of=q0] {};
-                \draw (q0)
-                    edge node {$(*, 1, 1)$} (q1)
-                    edge [loop above] node {$(*, 0, 0)$} (q0)
-                    (q1)
-                    edge [loop above] node {$(*, 0, 0)$} (q1)
-                    ;
+            \begin{tikzpicture}[automata]
+                \node[initial, state, accepting] (A) {};
+                \draw (A) edge[loop above]
+                    node {$\begin{array}{c}
+                        (0, 0) \\
+                        (0, 1) \\
+                        (1, 1)
+                    \end{array}$} (A);
             \end{tikzpicture}
             \end{center}
-            where the wildcard * means that the value in that coordinate
-            is ignored.
-            This construction ensures that the only way a word is recognised
-            is if its second and third coordinates consist only of zeros,
-            except in one place where they are both one.
-        \item If $\phi(P, x, y)$ is $S(x) = y$, we want that the only 1
-            in the second coordinate appears just before
-            the 1 in the second.
+            In this automaton, an infinite run is possible
+            if and only if each digit of $X$ is smaller that the
+            corresponding digit of $Y$, so the only impossible case is $(1, 0)$,
+            which would correspond to have some $x \in X$ that does not belong to $Y$.
+
+        \item If $\phi(X, Y)$ is $\Succ(X, Y)$,
+            a corresponding automaton is:
             \spacedAutomata{
-                \node[state, initial] (q0) at (0, 0) {};
-                \node[state] (q1) [right of=q0] {};
+                \node[state, initial] (q0) {};
+                \node[state, right of=q0] (q1) {};
                 \node[state, accepting] (q2) [right of=q1] {};
 
-                \draw (q0) edge [loop above] node {$(*, 0, 0)$} (qo)
-                    edge node {$(*, 0, 1)$} (q1)
-                    (q1) edge node {$(*, 1, 0)$} (q2)
-                    (q2) edge [loop above] node {$(*, 0, 0)$} (q2);
+                \draw (q0) edge [loop above] node {$(0, 0)$} (qo)
+                    edge node {$(1, 0)$} (q1)
+                    (q1) edge node {$(0, 1)$} (q2)
+                    (q2) edge [loop above] node {$(0, 0)$} (q2);
             }
-        \item If $\phi(P, x, y)$ is $S^a(x) = S^b(y)$,
-            where $S^a$ is the successor function applied $a$ times,
-            we can assume that $a < b$ (otherwise we consider $S^b(y) = S^a(x)$).
+            There, a one must be read in $X$ just before it is read in $Y$,
+            and nowhere else.
 
+        \item If $\phi(X)$ is $\Sing(X)$,
+            a corresponding automaton is
+            \spacedAutomata{
+                \node[state, initial] (q0) {};
+                \node[state, accepting, right of=q0] (q1) {};
+                \draw (q0)
+                    edge node {$1$} (q1)
+                    edge [loop above] node {$0$} (q0)
+                    (q1)
+                    edge [loop above] node {$0$} (q1)
+                    ;
+
+            }
+
+        \item If $\phi(\vec X)$ is $\psi(\vec X) \vee \chi(\vec X)$,
+            or $\neg \psi(\vec X)$
+            where $\psi$ and $\chi$ have equivalent automaton,
+            we know by \autoref{thm:closure-of-buchi}
+            that the class of Büchi automata
+            is closed under union and complementation,
+            so there is a automaton corresponding to $\phi$.
+
+        \item If $\phi(\vec X)$ is $\exists Y~ \psi(\vec X, Y)$
+            and $A$ is the automaton corresponding to $\psi(\vec X, Y)$,
+            an automaton for $\phi$ is a copy of $A$
+            in which the transition constraint for the variable $Y$
+            are erased. That is, if $A$ works on the alphabet $\IB^{k+1}$
+            and has a transition function $\delta: \IB^{k+1} \times S \to \Pp(S)$,
+            then the automaton $A'$ for $\phi$ works on the alphabet $\IB^{k}$
+            and has transition function \[
+                \func{\delta'}{\IB^k \times S}{\Pp(S)}
+                    {(b, s)}{
+                        \bigcup_{y \in \IB} \delta\bigparenthesis{(b_1, \dots, b_k, y), s}
+                    }
+            \]
+            It is the projection on the coordinate $Y$ of the automaton $A$.
     \end{itemize}
 
 \end{proof}
 
 
+\subsection{Bisimilarity}
+
+In this section we will look at an other remarkable fact
+about MSO, which brings it closer to theoretical computer science.
+An important class of objects in theoretical computer science
+is the class of labeled transition systems,
+which are directed graphs with labels on both the edges and vertices.
+Those labels correspond to different kind of transitions
+that can happen from on state to the other. It is a concept similar
+to automata, but without a notion of initial and accepting states.
+
+\begin{definition}
+    Given to sets of symbols $P$ and $M$,
+    a \emph{labeled transition system}
+    is a quadruple $\IS = (S, \Lambda, \Gamma, R, V)$, where:
+    \begin{itemize}
+        \item $S$ is a set of \emph{states}.
+        \item $\Lambda$ is a set of \emph{edge labels}.
+        \item $\Gamma$ is a set of \emph{state labels}.
+        \item $R: \Lambda \to \Pp(S \times S)$ is the transition rule,
+            so that for $\alpha \in \Lambda$, $R(\alpha)$ is a binary relation
+            that discribes a directed graph on $S$.
+        \item $V: \Gamma \to \Pp(S)$ describes the state labels,
+            so that for $\alpha \in \Gamma$,
+            $V(\alpha)$ is the set of state labelled with $\alpha$.
+    \end{itemize}
+
+    Note that this notion encompasses that of Kripke structure.
+\end{definition}
+
+We will look at the notion of bisimilarity, or bisimulation, which is
+an equivalence relation on labeled transition systems.
+Intuitively, two labeled transition systems are bisimilar if
+they can simulate each other and an observer cannot distinguish
+between them.
+We formalise the idea of being undistinguishable
+by an observer with Ehrenfreucht-Fraïssé games.
+
+\begin{definition}
+    Let $\IS = (S, \Lambda, \Gamma, R, V)$
+    and $\IT = (T, \Lambda, \Gamma, R', V')$
+    be two labeled transition system that share the same set of labels.
+
+    The \emph{Ehrenfreucht-Fraïssé game} of \IS and \IT is
+    an infinite game, between two players that we
+    call \Attacker and \Defender.
+    The game plays as follows:
+    \begin{enumerate}
+        \item The \Attacker picks a model $M \in \set{\IS, \IT}$,
+            and a state $q_A \in M$
+        \item Let $M' \in \set{\IS, \IT}$ be the model not chosen by the \Attacker.
+            The \Defender picks a state $q_D \in M'$
+            such that $q_A$ and $q_D$ have the same labels.
+            That is, for every state label $\alpha \in \Gamma$,
+            $q_A \in V(\alpha)$ if and only if $q_D \in V(\alpha)$.
+
+        \item At each turn, let $(p, p') \in M \times M'$ be the two states $q_A$ and $q_D$ picked by the two players
+            in the last turn.
+            the \Attacker picks $p_A \in \set{p, p'}$
+            and a transition $p_A \xto{\alpha} q_A$
+            for some $\alpha \in \Lambda$ and $q_A$ in the same model as $p_A$.
+        \item To a move $p_A \xto{\alpha} q_A$
+            the \Defender picks a transition $p_D \xto{\alpha} q_D$.
+            where $p_D$ is the state of $\set{p, p'}$ not picked by the \Attacker,
+            and $q_D$ is in the same model as $p_D$
+            and such that $q_A$ and $q_A$ have the same labels.
+        \item If a player cannot pick a transition,
+            he loses the game. Otherwise, if the game is infinitely long,
+            the \Defender wins.
+    \end{enumerate}
+\end{definition}
+
+\begin{definition}
+    Two labeled transition systems \IS and \IT are \emph{bisimilar} if
+    the \Defender has a winning strategy in the Ehrenfreucht-Fraïssé game
+    with \IS and \IT.
+\end{definition}
+
+\begin{example}
+    The two transition systems below, with one edge label that we represent by a simple arrow,
+    and vertice labels $\set{P}$ that we write on the node, next to the name of the node (which is only used for clarity, states in transition systems are not named, and thus cannot be distinguished by the names.), are bissimilar:
+
+    \begin{center}
+    \begin{tikzpicture}[automata]
+        \node[state] (X) at (-5, 0) {$\alpha \Forces$};
+        \node[state, below of=X] (Y) {$\beta \Forces P$};
+        \draw (X) edge (Y)
+                  edge[loop above] (X);
+
+        \node[state] (A) {$\gamma \Forces$};
+        \node[state] (B) at (-1, -2) {$\delta \Forces P$};
+        \node[state] (C) at (1, -2) {$\eta \Forces P$};
+        \draw (A) edge (B)
+                  edge (C)
+                  edge[loop above] (X);
+    \end{tikzpicture}
+    \end{center}
+
+    Indeed, we can exhibit a winning strategy for the \Defender:
+    \begin{itemize}
+        \item If the \Attacker starts with $\beta$, the \Defender
+            can pick $\delta$, which has the same labels.
+            On the second turn, the \Attacker need to choose
+            one of the two node previous nodes, $\beta$ or $\delta$
+            and a transition out of it. Since no transition leave either node,
+            she cannot play and loses.
+        \item Similarly, if the \Attacker starts with $\delta$ or $\eta$, the \Defender
+            can pick $\beta$, and the \Attacker is not able to play in the next round.
+        \item If the \Attacker picks $\alpha$ or $\gamma$,
+            the \Defender can answer respectively with $\y$ or $\alpha$,
+            since it also has the same labels. On the next turn,
+            \begin{itemize}
+                \item if the \Attacker
+                    picks the first model and $\beta$, the \Defender can pick $\delta$
+                    in the second model, and wins for the same reason as in the first case.
+                \item if she picks the second model and either $\delta$ or $\eta$,
+                    the \Defender can pick $\beta$ in the first model, the \Attacker will not be able to play
+                    in the next turn.
+                \item if she picks either $\alpha$ or $\gamma$,
+                    the \Defender picks the other one, and the game is back to the same
+                    state as the first turn.
+                    Since all other moves of the \Attacker are immediately loosing,
+                    she might play either $\alpha$ or \y infinitely many times,
+                    which gives the victory to the \Defender, because the \Attacker
+                    fails to reveal any difference between the two models.
+            \end{itemize}
+    \end{itemize}
+
+    In this example, we can feel why the two models are bissimilar: however
+    the \Attacker moves in either graph, we can always move in a symetrical fashion in
+    the other graph.
+
+    We can also notice that at any point in a game, the winner does not depend on the history of the game,
+    but ony on the two positions picked at the last turn.
+    This kind of games are called memoryless, because there is always a winning strategy
+    that depends only on the last move.
+\end{example}
+
+\begin{example}
+    The two transition systems below are bissimilar:
+    \begin{center}
+        \begin{tikzpicture}[automata]
+           \node[state] (A) {$\alpha \Forces P$};
+           \node[state, right of=A] (B) {$\beta \Forces Q$};
+           \draw (A) edge[bend left] (B);
+           \draw (B) edge[bend left] (A);
+        \end{tikzpicture}
+    \end{center}
+
+    \begin{center}
+        \begin{tikzpicture}[automata]
+            \node[state] (A) {$1 \Forces P$};
+            \node[state, right of=A] (B) {$2 \Forces Q$} edge[<-] (A);
+            \node[state, right of=B] (C) {$3 \Forces P$} edge[<-] (B);
+            \node[state, right of=C] (D) {$4 \Forces Q$} edge[<-] (C);
+            \node[state, right of=D] (E) {$5 \Forces P$} edge[<-] (D);
+            \node[right of=E] {\dots} edge[<-] (E);
+        \end{tikzpicture}
+    \end{center}
+\end{example}
+
+\begin{example}
+    Those two transition systems are not bissimilar:
+    \begin{center}
+        \begin{tikzpicture}[automata]
+            \node[state] (A) {$1 \Forces $};
+            \node[state, right of=A] (B) {$2 \Forces P$} edge[<-] (A);
+            \node[state, right of=B] (C) {$3 \Forces $} edge[<-] (B);
+        \end{tikzpicture}
+        \quad\quad
+        \quad\quad
+        \begin{tikzpicture}[automata]
+            \node[state] (A) {$\alpha \Forces $};
+            \node[state, right of=A] (B) {$\beta \Forces P$} edge[<-] (A);
+        \end{tikzpicture}
+    \end{center}
+
+    Indeed, the \Attacker has a winning strategy:
+    \begin{itemize}
+        \item On the first turn, the \Attacker picks state 3 in the left model.
+        \item The \Defender is forced to pick $\alpha$, since it is the
+            only state with an empty label in the right model.
+        \item On the second turn, the \Attacker can pick either $3$ or $\alpha$
+            but since 3 has not outgoing transition, she picks $\alpha$
+            and the \Defender cannot pick any transiton in the left model
+            and looses.
+    \end{itemize}
+\end{example}
 
 
+
+\todo{introduce van Benthem theorem}
+
+\section{Mu calculus}
+
+\subsection{Definition}
+
+We have seen the notion of bisimilarity, which is one way of considering
+different models the same. However, in MSO, there are formulas
+that do not have the same truth value in two bisimilar models
+\todo{add example}. On the other hand, some formulas always
+have the same truth value in bisimilar models.
+If one is to study which formulas of MSO are invariant under bisimilarity,
+they find a class of formulas that corresponds to the $\mu$-calculus.
+
+The $\mu$-calculus is an extension of propositional logic,
+extended with modal and fixpoint operators.
+
+\begin{definition}
+    The \emph{signature} of a $\mu$-calculus language is
+    $\sigma = P \cup M$, where
+    \begin{itemize}
+        \item $P$ contains propositional symbols of arity 0.
+        \item $M$ contains modal operators symbols.
+    \end{itemize}
+    Both of those sets can be finite of infinite.
+\end{definition}
+
+\begin{definition}
+    The \emph{formulas} of the $\mu$-calculus with signature $\sigma = P \cup M$
+    is the smallest set such that:
+    \begin{itemize}
+        \item each proposition $p \in P$ and each variable is a formula.
+        \item if $\phi$ and $\psi$ are formulas, then $\phi \wedge \psi$ is a formula.
+        \item if $\phi$ is a formula, then $\neg \phi$ is a formula.
+        \item for each modal operator $m \in M$, and formula $\phi$,
+            $\boite{m} \phi$ is a formula read ``$m$ box $\phi$''.
+        \item if $Z$ is a variable and $\phi$ a formula,
+            and every occurence of $Z$ occurs positively in $\phi$,
+            that is, is under an even number of negations,
+            then $\nu Z\, \phi$ is a formula.
+    \end{itemize}
+    Furthermore, if $\phi, \psi$ are formulas, $m$ is a modal operator
+    and $Z$ is a variable, we have the following shorthands:
+    \begin{itemize}
+        \item $\phi \vee \psi$ stands for $\neg (\neg \phi \wedge \neg \psi)$
+        \item $\diam m \phi$ stands for $\neg \boite m \neg\phi$. This is read ``$a$ diamond $\phi$''.
+        \item $\mu Z\, \phi$ stands for $\neg \nu Z\, \neg\phi[Z := \neg Z]$.
+            where $\phi[Z := \neg Z]$ is the formula obtained by replacing
+            every occurence of $Z$ by $\neg Z$ in $\phi$.
+    \end{itemize}
+\end{definition}
+
+\todo{add motivation for modal operators and fixpoint operators}
+
+\begin{definition}
+    A \emph{model} of $\mu$-calculus with signature $\sigma = P \cup M$
+    is a \emph{labeled transition system}
+    $\IS = (S, \Lambda, \Gamma, R, V)$, where:
+    \begin{itemize}
+        \item $S$ is the set of states.
+        \item $\Lambda = M$ is the set of edge labels, or modal operators.
+        \item $\Gamma = P$ is the set of state labels, or propositional symbols.
+        \item $R: M \to \Pp(S \times S)$ maps each
+            modal operators to a binary relation on states.
+            This can be seen as $\abs M$ directed graphs.
+        \item $V: P \to \Pp(S)$ maps each propositional symbol to
+            the set of states on which it is true.
+    \end{itemize}
+    Since $\Lambda = P$ and $\Gamma = M$ are part of the signature of the
+    language, we will not write them explicitely, and introduce
+    labeled transition systems as $\IS = (S, R, V)$.
+\end{definition}
+
+Finally, we need to describe how $\mu$-calculs
+formulas are interpreted in a given labeled transition system.
+There are four facts that differ from classical propositional
+logic:
+\begin{itemize}
+    \item The meaning of a formula is the set of states on which it is true.
+        In particular, a formula does not have a truth value in a given model,
+        but only at a given state in the model.
+    \item The modal operators $\boite m$ and $\diam m$ corresponds
+        to movements in the directed graph corresponding to $m$.
+        The box operator $\boite m \phi$ means that $\phi$ is satified in
+        every $m$-neighbour of the current state. On the other hand,
+        the diamond operator $\diam m \phi$ means that there exists
+        a $m$-neighbour in which $\phi$ is satisfied.
+    \item Variables are not interpreted as states, but as set of states
+        on which they are true.
+    \item The fixpoint operator $\mu$ is a least fixpoint
+        whereas $\nu$ is the greatest fixpoint in the sense
+        that $\nu Z \, \phi$ is true in the largest set of states $Z$
+        such that $\phi$ is satisfied on $Z$.
+\end{itemize}
+
+\begin{definition}
+    Let $\IS = (S, R, V)$ be a labeled transition system with signature $\sigma = P \cup M$.
+    An interpretation $i$ is a map that associates each variable $Z$
+    to the set of states $i(Z) \subset S$ on which it is true.
+
+    The \emph{meaning} of a formula $\phi$ is the set of states $\Meaning{\phi}^\IS_i \subset S$
+    defined as follows.
+    \begin{itemize}
+        \item $\Meaning{p}^\IS_i = V(p)$ if $p \in P$.
+        \item $\Meaning{Z}^\IS_i = i(Z)$ if $Z$ is a variable.
+        \item $\Meaning{\phi \wedge \psi}^\IS_i = \Meaning{\phi}^\IS_i \cap \Meaning{\psi}^\IS_i$
+            if $\phi, \psi$ are formulas.
+        \item $\Meaning{\neg \phi}^\IS_i = S \setminus \Meaning{\phi}^\IS_i$
+            if $\phi$ is a formula.
+        \item $\Meaning{\boite m \phi}^\IS_i = \setst{s \in S}{
+            \forall t \in S~ (s, t) \in R(m) \implies t \in \Meaning{\phi}^\IS_i}$
+            if $\phi$ is a formula and $m$ a modal operator.
+        \item $\Meaning{\nu Z \, \phi}^\IS_i = \bigcup \setst{T \subset S}{T \subset \Meaning{\phi}^\IS_{i[Z := T]}}$
+            if $\phi$ is a formula. Where $i[Z := T]$ maps $Z$ to $T$ and the rest of the map $i$ is not modifed.
+    \end{itemize}
+    If follows that the interpretations of $\vee$, $\diam{m}$ and $\mu$
+    are, $\phi, \psi$ are formulas:
+    \begin{itemize}
+        \item $\Meaning{\vee \phi \wedge \psi}^\IS_i = \Meaning{\phi}^\IS_i \cup \Meaning{\psi}^\IS_i$.
+        \item $\Meaning{\diam m \phi}^\IS_i = \setst{s \in S}{\exists t \in S~ (s, t) \in R(m) \implies t \in \Meaning{\phi}^\IS_i}$
+        \item $\Meaning{\mu Z\, \phi}^\IS_i = \bigcap \setst{T \subset S}{\Meaning{\phi}^\IS_{i[Z := T]} \subset T}$
+    \end{itemize}
+\end{definition}
+
+Informally, we have that
+\begin{itemize}
+    \item $p$ holds for all states in $V(p)$
+    \item $Z$ holds for all states in $i(Z)$
+    \item $\phi \wedge \psi$ holds for states where both $\phi$ and $\psi$ hold.
+    \item $\phi \vee \psi$ holds for states where either $\phi$ or $\psi$ hold.
+    \item $\neg \phi$ holds for states where $\phi$ doesn't hold.
+    \item $\boite m \phi$ holds in $s$ if all $m$-transitions from $s$ lead to states where $\phi$ holds.
+    \item $\diam m \phi$ holds in $s$ if there exists a $m$-transition from $s$ to a state where $\phi$ holds.
+    \item $\nu Z \, \phi$ holds in a state $s$
+        if there exist a subset $T \subset S$ of states
+        that contains $s$ and when $Z$ is interpreted as $T$
+        in $\phi$, the set on which $\phi$ holds contains $T$.
+
+        Note that the application
+        $\Meaning{\phi}^\IS_{i[Z := T]}$ is increasing in $T$,
+        because every syntaxic construction but the negation are clearly
+        increasing functions of $T$, and the negation is a decreasing
+        function. Nevertheless, the variable $Z$ is always under an even number of
+        negation, therefore by composition of decreasing function,
+        $\Meaning{\phi}^\IS_{i[Z := T]}$ is increasing in $T$.
+
+        By Knaster-Tarski's theorem, $\Meaning{\nu Z\, \phi}^\IS_i$
+        is then the largerst fixed point of $\Meaning{\phi}^\IS_{i[Z := T]}$.
+    \item On the other hand, $\mu Z \, \phi$ is the smallest fixed point
+        of $\Meaning{\phi}^\IS_{i[Z := T]}$.
+\end{itemize}
+
+\subsection{Relation to MSO}
+\subsection{Model checking (?)}
 
 
 
@@ -501,9 +1709,6 @@ as $\text{S1S}_0$ formulas.
 
 
 \iffalse
-\section{Introduction}
-
-\subsection{The parity game}
 \begin{definition}
     The \emph{parity game} is an inifinite two player game
     played on a directed graph $G = (V, E)$. Let $V_0, V_1$
@@ -545,6 +1750,5 @@ as $\text{S1S}_0$ formulas.
 \nocite{*}
 \bibliographystyle{apalike}
 \bibliography{bibliography.bib}
-
 
 \end{document}

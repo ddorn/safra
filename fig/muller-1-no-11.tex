@@ -1,0 +1,36 @@
+\begin{tikzpicture}[>=latex',join=bevel,node distance=4cm]
+  \node (0) [draw,ellipse,safrastate,initial] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}A}]
+\end{forest}};
+  \node (1) [right of=0] [draw,ellipse,safrastate] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}AB}]
+\end{forest}};
+  \node (2) [right of=1] [draw,ellipse,safrastate] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}ABC}]
+\end{forest}};
+  \node (3) [above right of=2] [draw,ellipse,safrastate] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}AB}
+  [{\nodepart{one}1\nodepart{two}B}]]
+\end{forest}};
+  \node (4) [below right of=2] [draw,ellipse,safrastate] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}ABC}
+  [{\nodepart{one}1\nodepart{two}C}]]
+\end{forest}};
+  \node (5) [below right of=3] [draw,ellipse,safrastate] {\begin{forest}safra,
+[{\nodepart{one}0\nodepart{two}AB}
+  [{\nodepart{one}1\nodepart{two}B !}]]
+\end{forest}};
+  \path[->] (0) edge[bend left,edge0] node {0} (1)
+            edge[bend right,edge1] node {1} (1)
+        (1) edge[edge0, loop above] (1)
+            edge[edge1] node {1} (2)
+        (2) edge[edge1, loop above] (2)
+            edge[edge0] node {0} (3)
+        (3) edge[edge0, loop above] (3)
+            edge[edge1] node {1} (4)
+        (4) edge[edge0,bend left] node {0} (5)
+            edge[edge1] node {1} (2)
+        (5) edge[edge0] node {0} (3)
+            edge[edge1,bend left] node {1} (4)
+        ;
+\end{tikzpicture}
