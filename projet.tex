@@ -15,12 +15,26 @@
     \end{forest}
     }
 }
-\newcommand{\boite}[1]{[#1]\,}
-\newcommand{\diam}[1]{\langle#1\rangle\,}
+\newcommand{\boite}[1]{\ifthenelse{\isempty{#1}}%
+    {\Square}%
+    {[#1]\,}%
+}
+\newcommand{\diam}[1]{\ifthenelse{\isempty{#1}}%
+    {\Diamond}%
+    {\langle#1\rangle\,}%
+}
 \newcommand{\Meaning}[1]{\llbracket#1\rrbracket}
 \newcommand{\Attacker}{\textsf{Attacker}\xspace}
 \newcommand{\Defender}{\textsf{Defender}\xspace}
+\newcommand{\Verifier}{\textsf{Verifier}\xspace}
+\newcommand{\Falsifier}{\textsf{Falsifier}\xspace}
+\newcommand{\AlternatingDepth}{\mathrm{adepth}}
 
+\newcommand{\State}[1]{%\scalebox{0.5}{
+\begin{tikzpicture}[baseline=(O.base)]
+    \node[draw,circle] (O) {\(#1\)};
+\end{tikzpicture}%}
+\xspace}
 
 \newcommand{\spacedAutomata}[1]{\begin{center}
 \begin{tikzpicture}[automata, node distance=90pt]
@@ -42,6 +56,16 @@
             anchor=north,
         },
     },
+    formula/.style={
+        for tree={
+            edge={->},
+            draw,
+            circle,
+            minimum size=1cm,
+            math content,
+            anchor=center,
+        }
+    }
 }
 \newcommand{\safranode}[2]{\nodepart{one}#1\nodepart{two}#2}
 
@@ -66,7 +90,23 @@
             text=black,
             fill=white,
         },
-    }
+    },
+    priority odd/.style={
+        regular polygon,
+        regular polygon sides=4,
+        fill=awesome!15,
+        draw=awesome!50,
+        minimum size=0.2cm,
+        inner sep=0.5pt,
+    },
+    priority even/.style={
+        regular polygon,
+        regular polygon sides=4,
+        fill=airforceblue!15,
+        draw=airforceblue!50,
+        minimum size=0.2cm,
+        inner sep=0.5pt,
+    },
 }
 
 
@@ -245,11 +285,141 @@ con be recognised by a deterministic Muller automaton.
 Indeed, this proof is much more complex than the others
 andwill be carried in \autoref{sec:safra}.
 
+\begin{lemma}
+    \label{lem:muller-to-parity}
+    Let $\Mm$ be a deterministic Muller automaton,
+    then there exist a deterministic parity automaton $\Aa$
+    such that $\Ll(\Mm) = \Ll(\Aa)$.
+\end{lemma}
+
+\begin{proof}
+    The proof is carried in two steps.
+    First we assume that $\Mm = (Q, \Sigma, \delta, q_0, \Ff)$
+    with $\abs{F} = 1$, that is, there is only one set
+    of states that can occur infinitely many times.
+    We then show that parity automata are closed under disjunctions
+    and conclude that if $\Ff = \set{F_1, F_2, \dots, F_n}$
+    we can construct a parity automaton from the automata
+    $\Aa_i$ made from $\Mm$ and replacing $\Ff by \set{F_i}$.
+
+    \paragraph*{Case of one accepting subset}
+    Let $\Mm = (Q, \Sigma, \delta, q_0, \Ff)$ be a Muller automaton
+    with $\Ff = \set{F}$. Let also $F = \set{f_1, f_2, \dots, f_n}$.
+    We define $\Aa = (Q', \Sigma, \delta', q'_0, p)$ as follows:
+    \begin{itemize}
+        \item The set of states is $Q' = Q \times F$.
+        \item The initial state is $q'_0 = (q_0, f_0)$.
+        \item The priority of a state $(q, f) \in Q'$ is \[
+            p((q, f)) = \begin{cases}
+                1 & \tif q \notin F \\
+                2 & \tif (q, f) = (f_0, f_0) \\
+                3 & \otherwise.
+            \end{cases}
+        \]
+        \item Since the automaton is deterministic, we give the transition
+            function as $\delta': Q' \times \Sigma \to Q'$. Let $q \in Q, f_i \in F$
+            and $a \in \Sigma$. We set \[
+            \delta'\bigparenthesis{(q, f_i), a} = \begin{cases}
+                \bigparenthesis{\delta(q, a), f_{i+1}} & \tif q = f_i \andd i < k \\
+                \bigparenthesis{\delta(q, a), f_0} & \tif q = f_i \andd i = k \\
+                \bigparenthesis{\delta(q, a), f_i} & \otherwise.
+            \end{cases}
+        \]
+    \end{itemize}
+
+    \paragraph{Correctness of the construction}
+    Let $w \in \infseq{\Sigma}$ be an \w-word accepted by $\Aa$ and let $r' \in \infseq{Q'}$
+    be the corresponding run.
+    By the definition of $\delta'$, the run $r \in \infseq{Q}$ of $w$ on $\Mm$
+    is exactly the projection of $r'$ on its first coordinate, that is, $r = \pi_1(r')$.
+    Since $r'$ is accepted by \Aa, we know that $r'$
+    visits finitely many times states of priority 1, which are the
+    states in $(Q \setminus F) \times F = \pi^{-1}_1(Q \setminus F)$.
+    Therefore $\Inf(\pi_1(r')) \subset F$ and equivalently $\Inf(r) \subset F$.
+    For the other inclusion, we have that $r'$ visits infinitely many
+    times the only state of even priority, $(f_0, f_0)$. However,
+    every time it does so, the run proceeds into $Q \times \set{f_1}$,
+    which can be escaped only when reaching $(f_1, f_1)$,
+    and then proceeds to the subset $Q \times \set{f_2}$, and so on.
+    Therefore, it has visited every state of the form $(f_i, f_i)$
+    before reaching $(f_0, f_0)$ again, and thus $\Inf(r) = \pi_1(r') = F$
+
+    For the reverse implication, assume that $w \in \infseq{\Sigma}$ is accepted by \Mm
+    on the run $r \in \infseq{Q}$ and let $r' \in \infseq{Q'}$ be the run in \Aa.
+    Since $\Inf(r) = F$ and $\Inf(r') \subset \Inf(\pi^{-1}_1(r)) = F \times F$,
+    we know that $r'$ visits nodes of priority 1 finitely many times.
+    It remains to show that $r'$ visits $(f_0, f_0)$ infinitely many times.
+    Let $n$ be an integer. We show that, if $r'_n = (q, f_k)$, for some $k$,
+    then there is some $m > n$ such that $r'_m = (f_k, f_k)$.
+    Indeed, appart from the transions from $(f_k, f_k)$, the transitions
+    inside the subset $Q \times \set{f_k}$ of $Q'$ match exactly those of the
+    Muller automaton \Mm. Since in $\Mm$ the run $r$ visits $f_k$,
+    it must also be the case in $Q \times \set{f_k}$.
+    Finally, this fact shows that every state of the form $(f_k, f_k)$ is
+    visited infinitely many times, and therefore $r'$
+    visits $(f_0, f_0)$ infinitely many times and accepts $w$.
+
+    \paragraph{Parity automata are closed under disjunctions}
+    Let $\Aa_0 = (Q_0, \Sigma, \delta_0, q_0, p_0)$
+    and $\Aa_1 = (Q_1, \Sigma, \delta_1, q_1, p_1)$
+    be two parity automata.
+    We build an automata $\Bb = (Q, \Sigma, \delta, q, p)$
+    such that $\Ll(\Bb) = \Ll(\Aa) \cup \Ll(\Aa')$.
+    The construction follows the cartesian product of the automata,
+    with a specific priority function: \begin{itemize}
+        \item The set of states is $Q = Q_0 \times Q_1$.
+        \item The initial state is $q = (q_0, q_1)$.
+        \item The transition function is $\delta = (\delta_0,  \delta_1)$,
+            that is, for any state $(s, s') \in Q$, and any symbol $a \in \Sigma$,
+            \[
+                \delta((s, s'), a) =
+                    \bigparenthesis{
+                        \delta_0(s, a),
+                        \delta_1(s', a)
+                    }
+            \]
+        \item The priority function $p: (Q_0 \times Q_1) \to \N$
+            is any function that verify those three conditions:
+            \begin{enumerate}
+                \item it assigns to each pair $(s, s') \in Q$
+                    an even number if and only if either $p(s)$ or $p(s')$ is even.
+                \item for each $t \in Q_0$, $p(s, s') < p(t, s')$
+                    if and only if $p_0(s) < p_0(t)$ so that the order is preserved.
+                \item symetrically, for each $t \in Q_1$, $p(s, s') < p(s, t)$
+                    if and only if $p_1(s') < p_1(t)$.
+            \end{enumerate}
+            To give an explit function, let $N := 2 \cdot \max_{q \in Q_1} p_1(q) + 2$ and $(s, s') \in Q$.
+            We set
+            \[
+                p(s, s') = \begin{cases}
+                    N \cdot p_0(s) + p_1(s') & \tif p_0(s) \odd \\
+                    N \cdot p_0(s) + 2 \cdot p_1(s') & \tif p_0(s) \even
+                \end{cases}
+            \]
+    \end{itemize}
+
+    \paragraph*{Correctness of the construction}
+    Let $w \in \infseq{\Sigma}$ be an \w-word and run $r, r_0$ and $r_1$
+    be the runs on $\Bb, \Aa_0$ and $\Aa_1$ respectively.
+    By construction, the two coordinates of the run $r$ are the runs $r_0$ and $r_1$.
+
+    The minimal priority of $\Inf(r)$ is obtained
+    on some state $(s, s') \in Q$. By the first condition
+    of the priority function, $p(s, s')$ is even if and only if
+    either $p_0(s)$ or $p_1(s')$ is even
+    and by condition 2 and 3, $s$ (resp. $s'$) is also
+    a state of $\Inf(r_0)$ (resp. $\Inf(r_1)$) with minimal priority.
+    Therefore, $r$ is accepted if and only if $r_0$ or $r_1$ is accepted,
+    and $w \in \Ll(\Aa_0) \cup \Ll(\Aa_1)$.
+
+\end{proof}
+
+\todo{Add example of the Muller to Parity construction}
 
 \begin{lemma}
     Let $\Aa$ be a deterministic parity automaton,
     then there exists a deterministic Muller automaton $\Mm$
-    such that $\Ll(\Aa) = \Mm(\Mm)$.
+    such that $\Ll(\Aa) = \Ll(\Mm)$.
 \end{lemma}
 \begin{proof}
     Let $\Aa = (Q, \Sigma, \delta, q_0, p)$ be parity automaton.
@@ -259,6 +429,7 @@ andwill be carried in \autoref{sec:safra}.
     \]
     which is a Muller condition.
 \end{proof}
+
 
 \begin{lemma}
     Let $\Aa$ be a deterministic parity automaton,
@@ -302,7 +473,8 @@ andwill be carried in \autoref{sec:safra}.
 
 \end{proof}
 
-\todo{add muller -> büchi}
+\todo{Add example of parity to buchi automaton construction}
+
 
 
 \subsection{The Safra construction}
@@ -450,8 +622,8 @@ added.
                     At that point, labels of siblings are disjoints.
                 \item \emph{Remove empty}:
                     remove all nodes that have an empty label, except the root.
-                \item \emph{Mark nodes}: mark each node with a $!$
-                    if and only if the union of its children labels
+                \item \emph{Mark nodes}: erase all $!$ marks, then mark each node with a $!$
+                    if the union of its children labels
                     is the same as the parent label.
                     In that case, remove the whole tree below the marked node.
             \end{enumerate}
@@ -609,6 +781,14 @@ This concludes the proof of \autoref{thm:all-automata-are-the-same}:
     automata that cannot be recognised with a Büchi automaton.
 \end{theorem*}
 
+The following theorem is one of the main reasons for which we have
+proven the above theorem. Indeed, we will later want to combine
+automata to show that they have the same expressive power as
+some formulas. To that extent, we need to to be able to take
+unions, intersections and complements of automata, which
+correspond respectively to the disjunction, conjunction and negation of
+formulas.
+
 \begin{theorem}(Closure properties of Büchi automata)
     \label{thm:closure-of-buchi}
     The class of languages recognised by Büchi automata
@@ -619,7 +799,20 @@ This concludes the proof of \autoref{thm:all-automata-are-the-same}:
     \end{itemize}
 \end{theorem}
 \begin{proof}
-    \todo{Add proof of closure of Büchi automata}
+    Since we have proven that the three class of Büchi,
+    deterministic Muller and deterministic parity automata
+    are equivalent, we can show the properties on any of the classes.
+
+    We have already proven that parity automata are closed
+    under union in \autoref{lem:muller-to-parity}
+    and the the closure under intersection
+    is a direct consequence of the closure under union and complements.
+    It suffices to show that Muller automata are closed under complements.
+
+    This is clear however, as given a Muller automaton $\Mm = (Q, \delta, \Sigma, q_0, \Ff)$,
+    the automata $\compl{\Mm} = (Q, \delta, \Sigma, q_0, \Pp(Q) \setminus \Ff)$
+    accepts a run $r \in \infseq{Q}$ if and only if $\Inf(r) \in \Pp(Q) \setminus \Ff$, that is,
+    $\Inf(r) \notin \Ff$, which corresponds to the fact that $\Mm$ does not accept $r$.
 \end{proof}
 
 \subsection{Example of the Safra construction}\label{sec:safra-examples}
@@ -1349,6 +1542,8 @@ which are directed graphs with labels on both the edges and vertices.
 Those labels correspond to different kind of transitions
 that can happen from on state to the other. It is a concept similar
 to automata, but without a notion of initial and accepting states.
+It also differ from automata as the set of states and transition in not necessarilly finite
+and not even countable.
 
 \begin{definition}
     Given to sets of symbols $P$ and $M$,
@@ -1504,14 +1699,14 @@ by an observer with Ehrenfreucht-Fraïssé games.
     Those two transition systems are not bissimilar:
     \begin{center}
         \begin{tikzpicture}[automata]
-            \node[state] (A) {$1 \Forces $};
+            \node[state] (A) {$1 \Forces \phantom{P}$};
             \node[state, right of=A] (B) {$2 \Forces P$} edge[<-] (A);
-            \node[state, right of=B] (C) {$3 \Forces $} edge[<-] (B);
+            \node[state, right of=B] (C) {$3 \Forces \phantom{P}$} edge[<-] (B);
         \end{tikzpicture}
         \quad\quad
         \quad\quad
         \begin{tikzpicture}[automata]
-            \node[state] (A) {$\alpha \Forces $};
+            \node[state] (A) {$\alpha \Forces \phantom{P}$};
             \node[state, right of=A] (B) {$\beta \Forces P$} edge[<-] (A);
         \end{tikzpicture}
     \end{center}
@@ -1539,10 +1734,34 @@ by an observer with Ehrenfreucht-Fraïssé games.
 We have seen the notion of bisimilarity, which is one way of considering
 different models the same. However, in MSO, there are formulas
 that do not have the same truth value in two bisimilar models
-\todo{add example}. On the other hand, some formulas always
+One example is the formula $\phi$ saying that there are two states that with label $P$,
+which is true in the second model but not the first:
+\[
+    \phi := \exists x~ \exists y~ P(x) \wedge P(y) \wedge \neg (x = y)
+\]
+    \begin{center}
+    \begin{tikzpicture}[automata]
+        \node[state] (X) at (-5, 0) {};
+        \node[state, below of=X] (Y) {$P$};
+        \draw (X) edge (Y)
+                  edge[loop above] (X);
+
+        \node[state] (A) {};
+        \node[state] (B) at (-1, -2) {$P$};
+        \node[state] (C) at (1, -2) {$P$};
+        \draw (A) edge (B)
+                  edge (C)
+                  edge[loop above] (X);
+    \end{tikzpicture}
+    \end{center}
+
+
+On the other hand, some formulas always
 have the same truth value in bisimilar models.
 If one is to study which formulas of MSO are invariant under bisimilarity,
 they find a class of formulas that corresponds to the $\mu$-calculus.
+\todo{Apparently, this is not true. $\mu$-calculus is reported to be the fragment
+of FOL invariant by bisimilarity (van Benthem theorem).}
 
 The $\mu$-calculus is an extension of propositional logic,
 extended with modal and fixpoint operators.
@@ -1682,33 +1901,52 @@ Informally, we have that
         of $\Meaning{\phi}^\IS_{i[Z := T]}$.
 \end{itemize}
 
+\todo{Add examples of mu-calculus formulas and their meaning}
 \subsection{Relation to MSO}
-\subsection{Model checking (?)}
+\subsection{Model checking}
 
+As is often the case in logic,
+the semantics of $\mu$-calculus can
+be defined alternatively defined via a two player game
+between the \Verifier and \Falsifier.
 
+To that extent, we need to define the alternating depth
+of a $\mu$-calculus variable and the concept of parity games.
 
+\begin{definition}
+Let $\phi$ be a formula of $\mu$-calculus.
+The \emph{alternating depth} of $\phi$, $\AlternatingDepth(\phi)$
+is the greatest number of syntaxical alternations between least and greatest
+fixpoint operators. That is, if $\phi$ is considered as a syntaxic tree,
+it is the largest number of alternations present on a single branch.
 
+If there is no alternations, the depth is zero.
+\end{definition}
 
+\begin{example}
+    In a language with a $p$ as propositional symbol, we have that:
+\begin{itemize}
+    \item $p \wedge \diam{}q$ has alternating depth 0
+    \item $\mu X~ p \vee \boite{} X$ also has alternating depth 0
+    \item $\nu Y~ \mu X~ (p \wedge \diam{} Y) \vee \diam{} X$ has alternating depth 2
+    \item $\mu X \parenthesis{p \wedge \nu Y (p \vee Y) \wedge \mu Z (X \vee Z)}$ has alternating
+        depth 2, because of the branch with $X$ and $Y$.
+\end{itemize}
+\end{example}
 
+Parity games is an important subject in complexity theory,
+as the problem of deciding whether the first or second player
+has a winning strategy is one of the few problems we know is
+in $\NP \cap \coNP$ be don't know if it is in $\Ptime$.
+We currently have a quasipolynomial alogrithm due to XXX \todo{add ref},
+and it can be shown that it is even in $\mathsf{UP} \cap \mathsf{coUP}$.
+As a reminder, the class $\mathsf{UP}$ is the class of decision problems
+that can be verified in polynomial time and have unique short certificates,
+that is, there is a polynomial Turing machine in which at most one computation path accepts.
 
+This makes $\mu$-calculus a good logic with both a good expressivity and
+good algoritmic properties, as its model checking is based on parity games.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\iffalse
 \begin{definition}
     The \emph{parity game} is an inifinite two player game
     played on a directed graph $G = (V, E)$. Let $V_0, V_1$
@@ -1722,15 +1960,17 @@ Informally, we have that
         \item At a given turn $i$, if $v_i \in V_0$,
             player 0 decides to move to an adjacent node
             $v_{i+1}$. Otherwise if $v_i \in V_1$, it is
-            player 1 that picks a neighbourg.
-        \item After $\w$ turns, they produce a sequence of vertices
-            $(v_n)_{n \in \N} \in V$. Let $V^\infty$ be the set of
-            vertices that have been visited infinitely many times.
-            If $\max \setst{p(v)}{v \in V^\infty}$ is even, player 0
+            player 1 that picks a neighbour of $v_i$.
+        \item If a player cannot pick a neighbour,
+        \item After \w turns, they have produced an infinite sequence of vertices
+            $(v_n)_{n \in \N} \in V$.
+            The least priority that was seen infinitely many
+            times determines the winner,  player$\max \setst{p(v)}{v \in \Inf(v)}$ is even, player 0
             wins. If it is odd, player 1 wins.
     \end{itemize}
 \end{definition}
 
+Note that any parity game is determined, as the winning set is
 \[
     W = \setst{b \in T}{
         \exists z \in V ~ \forall z' \in V \left(
@@ -1744,7 +1984,271 @@ Informally, we have that
         \right)
     }
 \]
-\fi
+which is a Borel set (in fact, it is $\borelsigma{3}$) and it thus determinate.
+\todo{Add reference}
+
+We give an example of the model checking game of $\mu$-calculus
+before defining it.
+Let $\phi = \nu Y~ \mu X~ (p \wedge \diam{} Y) \vee \diam{} X$ be a formula
+and we want to know whether some model satifies it.
+We first draw the formula as a tree:
+\begin{center}
+    \begin{tikzpicture}[automata,every node/.style={circle,draw}]
+        \node (1) {$\nu Y$};
+        \node[below of=1] (2) {$\mu X$} edge[<-] (1);
+        \node[below of=2] (3) {$\vee$} edge[<-] (2);
+        \node[right of=3] (4) {$\diam{}$} edge[<-] (3);
+        \node[below of=4] (5) {$X$} edge[<-] (4);
+        \node[left of=3] (6) {$\wedge$} edge[<-] (3);
+        \node[left of=6] (7) {$p$} edge[<-] (6);
+        \node[below of=6] (8) {$\diam{}$} edge[<-] (6);
+        \node[below of=8] (9) {$Y$} edge[<-] (8);
+    \end{tikzpicture}
+\end{center}
+
+And then we connect each variable to the node where it is bound.
+With some rearanging of the nodes for clarity and removing the variable names
+as they will not be used anymore, we get:
+
+\begin{center}
+    \begin{tikzpicture}[automata,every node/.style={circle,draw}]
+        \node (1) {$\nu$};
+        \node[below of=1] (2) {$\mu$} edge[<-] (1);
+        \node[below of=2] (3) {$\vee$} edge[<-] (2);
+        \node[right of=3] (4) {$\diam{}$} edge[<-] (3)
+                                          edge[->] (2);
+        \node[left of=3] (6) {$\wedge$} edge[<-] (3);
+        \node[below of=6] (7) {$p$} edge[<-] (6);
+        \node[above of=6] (8) {$\diam{}$} edge[<-] (6)
+                                          edge[->] (1);
+    \end{tikzpicture}
+\end{center}
+
+We then assign a priority to each node depending on their position in the formula $\phi$:
+\begin{itemize}
+    \item Every greatest fixpoint operator $\nu$ is assigned an even number,
+        greater that the priority of every least fixpoint operator $\mu$
+        above it in the tree of the formula.
+        Here the $\nu$ has no $\mu$ above it,so we can give it
+        a priority of $0$.
+    \item Conversly, every least fixpoint operator $\mu$ is assigned an odd number,
+        larger than the priority of every greatest fixpoint operator $\nu$
+        above it in the tree of the formula.
+        Here $\mu$ has a $\nu$ of priority 0 in the formula above it
+        so we can give it priority 1.
+    \item Every non-fixpoint node get an odd priority, higher than every other priority.
+        In this example, we can assign $3$ to each other node, but for clarity
+        we will not draw them on the graph.
+\end{itemize}
+
+\begin{center}
+    \begin{tikzpicture}[automata,every node/.style={circle,draw}]
+        \node (1) {$\nu$};
+        \node[below of=1] (2) {$\mu$} edge[<-] (1);
+        \node[below of=2] (3) {$\vee$} edge[<-] (2);
+        \node[right of=3] (4) {$\diam{}$} edge[<-] (3)
+                                          edge[->] (2);
+        \node[left of=3] (6) {$\wedge$} edge[<-] (3);
+        \node[below of=6] (7) {$p$} edge[<-] (6);
+        \node[above of=6] (8) {$\diam{}$} edge[<-] (6)
+                                          edge[->] (1);
+
+        \node[priority even] at ($(1.north east) + (0.07, 0.07)$) {0};
+        \node[priority odd]  at ($(2.north east) + (0.07, 0.07)$) {1};
+    \end{tikzpicture}
+\end{center}
+
+The formula consists on half of the game,
+indeed, it needs to be checked against a model.
+Given a model $\IS = (S, R, V)$ and a state $s \in S$,
+we want to know whether $\phi$ holds at $s$.
+For the first example, we take as model an infinite binary
+tree with no node satisfying the property $p$, that is $V(p) = \emptyset$.
+
+\begin{center}
+    \begin{forest}for tree={circle,draw,minimum size=0.5cm,edge={->}},where level=0{}{if level=4{draw=none,rectangle}{}},
+        [
+            [[[[\dots] [\dots]] [[\dots] [\dots]]] [[[\dots] [\dots]] [[\dots] [\dots]]]]
+            [[[[\dots] [\dots]] [[\dots] [\dots]]] [[[\dots] [\dots]] [[\dots] [\dots]]]]
+        ]
+    \end{forest}
+\end{center}
+
+The game is played both in the formula and the model
+at the same time. Each turn, one of the two player decides
+where to move in both structures.
+The game starts at the root of the formula and the state $s_0$
+in the model.
+The person that plays and its allowed moves are given by
+the current node of the formula. At each turn the current player
+must move in the tree of the formula to a neighbouring node,
+and potentially also make an extra action.
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Formula node & Player & Action \\
+        \hline
+        \hline
+        $p$ &       & End of the game
+        \\\hline
+        $\vee$ & Player 0 &
+        \\\hline
+        $\wedge$ & Player 1 &
+        \\\hline
+        $\diam{}$ & Player 0 & Pick $s_{n+1} \in S \st s_n \to s_{n+1}$
+        \\\hline
+        $\boite{}$ & Player 1 & Pick $s_{n+1} \in S \st s_n \to s_{n+1}$
+        \\\hline
+        $\neg$ & Any, there is only one choice & Player 0 and 1 switch roles
+        \\\hline
+        $\mu$ & Any, there is only one choice &
+        \\\hline
+        $\nu$ & Any, there is only one choice &
+        \\\hline
+    \end{tabular}
+\end{center}
+
+If the game ends on a proposition (after a finite number of turns),
+the winner is Player 0 if the last visited state in the model
+satifies the proposition, otherwise Player 1 wins.
+If the games runs for \w turns, the winner is determined by
+the smallest priority that was visited infinitely many times.
+
+In the current example, the position in the model does not matter much,
+because every state look like any other (formally, there is a bissimilarity relation
+between any two states). We can therefore focus on what happens in the graph of the formula.
+
+The game starts on \State{\nu}, and since there is only one choice,
+proceeds to \State{\mu}. On the next turn, there is still only one choice,
+so the game proceeds to the \State{\vee} node.
+On the \State{\vee} node, it is Player 0, also known as the Verifier that has to play.
+She can choose to move either to the \State{\diam{}} node on the right or the \State{\wedge}
+node. We examine both cases:
+\begin{itemize}
+    \item If she picks \State{\wedge} it is then Player 1's turn to play
+        and we can chose between the node \State{p} and the node \State{\diam{}} above.
+        However, moving to the node \State{p} is a winning move for him!
+        Indeed, because they have reached a proposition symbol,
+        the game ends and Player 1 wins if the current state in the model
+        does not satisfy the proposition $p$. But since no state in the model
+        satisfy $p$, he surely wins.
+    \item On the other hand, if she picks \State{\diam{}} it is again Player 0's turn.
+        For this turn, she needs takes two actions, she first moves to
+        the only neighbour of \State{\diam{}} which is \State{\mu} and picks $s_1 \in S$, a neighbour
+        of $s_0$.
+        From \State{\mu} the game proceeds to the node \State{\vee} and the same choice
+        is offered to Player 0.
+\end{itemize}
+
+So if Player 0 decides to move to \State{\wedge}, she looses. On the other hand,
+if she always decides to move to \State{\diam{}},
+the infinite path built by the two player is
+$\State{\nu}, \State{\mu}, \State{\vee}, \State{\diam{}}, \State{\mu}, \dots$,
+shown in orange below.
+
+\begin{center}
+    \begin{tikzpicture}[automata,every node/.style={circle,draw}]
+        \node (1) {$\nu$};
+        \node[below of=1] (2) {$\mu$} edge[<-,very thick,atomictangerine] (1);
+        \node[below of=2] (3) {$\vee$} edge[<-,very thick,atomictangerine] (2);
+        \node[right of=3] (4) {$\diam{}$} edge[<-,very thick,atomictangerine] (3)
+                                          edge[->,very thick,atomictangerine] (2);
+        \node[left of=3] (6) {$\wedge$} edge[<-] (3);
+        \node[below of=6] (7) {$p$} edge[<-] (6);
+        \node[above of=6] (8) {$\diam{}$} edge[<-] (6)
+                                          edge[->] (1);
+
+        \node[priority even] at ($(1.north east) + (0.07, 0.07)$) {0};
+        \node[priority odd]  at ($(2.north east) + (0.07, 0.07)$) {1};
+    \end{tikzpicture}
+\end{center}
+
+Here, the set of states visited infinitely many times is then
+$\set{\State{\mu}, \State{\vee}, \State{\diam{}}}$
+and the minimum priority is $\min \set{1, 3, 3} = 1$ and Player 0 loses.
+Indeed, the run passes infinitely many times by the $\mu$ of priority
+1, but only finitely many times through the the $\nu$ of priority 0 (in fact, only once).
+
+We have shown here that there is a winning strategy for Player 1, regardless
+of the starting node $s \in S$, the the formula $\phi$ holds nowhere in this model.
+
+\paragraph*{}
+To understand what $\phi$ does, we look at the game with a model in which it is verified.
+This model is the infinite binary tree on which every second node on the leftmost
+branch satisfy the property $p$:
+
+\begin{center}
+    \begin{forest}for tree={circle,draw,minimum size=0.5cm,edge={->}},where level=0{}{if level=4{draw=none,rectangle}{}},
+        [
+            [p [[p[\dots] [\dots]] [[\dots] [\dots]]] [[[\dots] [\dots]] [[\dots] [\dots]]]]
+            [[[[\dots] [\dots]] [[\dots] [\dots]]] [[[\dots] [\dots]] [[\dots] [\dots]]]]
+        ]
+    \end{forest}
+\end{center}
+
+The difference with the previous example is that now, Player 0
+can sometimes chose to move to the node \State{\wedge}
+without directly loosing in the next turn.
+Indeed, if she chooses to move to \State{\wedge}
+from \State\vee when the current position in the model satisfy $p$,
+Player 1 will not move to the node \State p as he would directly loose.
+Instead, a wise choice is to move up to \State{\diam{}}.
+From there, it is up to Player 0 to chose where to move inside the model
+before reaching the initial state \State\nu in the formula.
+
+If Player 0 somehow manages to do this loop infinitely many,
+they will have visited \State\nu of priority 0 infinitely many times
+and she would win.
+She can do this if and only if the run inside the model visits infinitely many
+times a node with $p$, so that she can decide to go to the loop on the left of the
+formula (according to the chosen layout of the graph).
+
+If the run starts on the leftmost branch, her strategy is then deceptively simple,
+as it is always her that chooses where to move in the model (there are no box operator in the formula),
+which just stays in the leftmost branch. Every time she reaches \State\vee,
+if the current node has label $p$, she decides to take the left loop in
+the formula, otherwise she takes the left loop.
+In the model given in example, she would alternate between the left and right loop,
+as every second state has label $p$. However, in a more general setting,
+she could could wait as long as she wants on the right loop, waiting for a state
+with $p$ and then take the left loop.
+
+Even if this might not be obvious at first sight,
+this means that $\phi$ is valid in every node
+form which there exists
+a path that visits infinitely many times a node with label $p$.
+
+
+
+
+\begin{definition}
+    Let $\phi$ be a formula of $\mu$-calculus,
+    $\IS = (S, R, V)$ be a model and $s_0 \in S$ a starting state.
+    The \emph{model checking game} of $\phi$ on $(\IS, s_0)$
+    is a parity game where:
+    \begin{itemize}
+        \item At each turn, the two players play a
+    \end{itemize}
+\end{definition}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \newpage
 \nocite{*}
