@@ -388,11 +388,28 @@ elements of $w$ that appear at infinitely many indices in $w$.
     many times the states on the right.
     In general, parity automata are a special case of Muller automata,
     when the family of accepting subsetsets of state can be defined
-    by a priority function. This is not always the case,
-    but it makes understanding and reasoning with the automaton simpler
-    when it is possible.
+    by a priority function.
 
 \end{examples}
+
+\begin{lemma}
+    Any parity automaton is also a Müller automaton.
+\end{lemma}
+\begin{proof}
+    Let $\Aa = (Q, \Sigma, \delta, q_0, p)$ be parity automaton.
+    Its acceptance condition is also a Muller acceptance condition as we can take
+    \[
+        \Ff = \setst{F \subseteq Q}{\min_{q \in F} ~p(q) \even}
+    \]
+    which is a Muller condition.
+\end{proof}
+
+One might then wonder why we would use parity automata in the first place,
+but they have the advantage of being easier to understand for a human brain
+because of the more explicit structure of the set of accepting runs.
+They are also easier to represent and sometimes easier to reason about,
+for instance, they are a bit simpler to convert to Büchi automata than Muller automata are.
+
 
 \subsection{Equivalences between automata}
 The goal of the following section is to show the equivalences
@@ -586,35 +603,35 @@ it own \autoref{sec:safra}.
     \begin{center}
         \begin{tikzpicture}[>=latex',join=bevel,node distance=70bp]
             % States of the first copy
-            \node[fill=white,initial, state] (AA) {AA};
-            \node[fill=white,state, right of=AA] (BA) {BA};
-            \node[fill=white,state, right of=BA] (CA) {CA};
+            \node[fill=white,initial, state] (AA) {2};
+            \node[fill=white,state, right of=AA] (BA) {3};
+            \node[fill=white,state, right of=BA] (CA) {1};
 
             % States of the second copy
-            \node[fill=white,state] (AB) at (0, -4) {AB};
-            \node[fill=white,state, right of=AB] (BB) {BB};
-            \node[fill=white,state, right of=BB] (CB) {CB};
+            \node[fill=white,state] (AB) at (0, -4) {3};
+            \node[fill=white,state, right of=AB] (BB) {3};
+            \node[fill=white,state, right of=BB] (CB) {1};
 
             \path (AA) edge[edge0, bend right] node {0} (AB)
                        edge[edge1,bend left=15] node {1} (BB)
-                  (BA) edge[edge0, ] node {0} (AA)
-                       edge[edge1, ] node {1} (CA)
+                  (BA) edge[edge0, ] (AA)
+                       edge[edge1, ] (CA)
                   (CA) edge[edge0, bend left] (AA)
                        edge[edge1, loop above] (CA);
 
             \path (AB) edge[edge0, loop below] (AB)
-                       edge[edge1, ] node {1} (BB)
+                       edge[edge1, ] (BB)
                   (BB) edge[edge0, bend left=15] node {0} (AA)
-                       edge[edge1, bend right=15] node {1} (CA)
+                       edge[edge1, ] node {1} (CA)
                   (CB) edge[edge0, bend left] (AB)
                        edge[edge1, loop above] (CB);
 
-            \node[priority even] at ($(AA.north east) + (0.07, 0.07)$) {2};
-            \node[priority odd]  at ($(BA.north east) + (0.07, 0.07)$) {3};
-            \node[priority odd]  at ($(CA.north east) + (0.07, 0.07)$) {1};
-            \node[priority odd]  at ($(AB.north east) + (0.07, 0.07)$) {3};
-            \node[priority odd]  at ($(BB.north east) + (0.07, 0.07)$) {3};
-            \node[priority odd]  at ($(CB.north east) + (0.07, 0.07)$) {1};
+            % \node[priority even] at ($(AA.north east) + (0.07, 0.07)$) {2};
+            % \node[priority odd]  at ($(BA.north east) + (0.07, 0.07)$) {3};
+            % \node[priority odd]  at ($(CA.north east) + (0.07, 0.07)$) {1};
+            % \node[priority odd]  at ($(AB.north east) + (0.07, 0.07)$) {3};
+            % \node[priority odd]  at ($(BB.north east) + (0.07, 0.07)$) {3};
+            % \node[priority odd]  at ($(CB.north east) + (0.07, 0.07)$) {1};
 
             \begin{scope}[on background layer]
                 \draw[awesome,fill=awesome!5] ($(AA) - (1.5, 1.5)$) rectangle ($(CA) + (1.5, 1.5)$);
@@ -624,6 +641,9 @@ it own \autoref{sec:safra}.
             \node[awesome,anchor=north west] at ($(AA) + (-1.5, 1.5)$) {Copy of A};
             \node[airforceblue,anchor=south east] at ($(CB) + (1.5, -1.5)$) {Copy of B};
 
+            \node[gray] at ($(AA) + (0, 2)$) {A};
+            \node[gray] at ($(BA) + (0, 2)$) {B};
+            \node[gray] at ($(CA) + (0, 2)$) {C};
         \end{tikzpicture}
     \end{center}
 
@@ -632,30 +652,16 @@ as the parity automaton we have already constructed, the resulting automaton is 
 A few states, however, are not reachable at all from the start (BA and CB), but this is just
 what happens to be in this specific example.
 
+In the next lemma, we prove the second implication, that is, we can convert a deterministic
+parity automaton into Büchi automaton.
+
 
 \end{example}
-
-\todo{Add example of the Muller to Parity construction}
-
-\begin{lemma}
-    Let $\Aa$ be a deterministic parity automaton,
-    then there exists a deterministic Muller automaton $\Mm$
-    such that $\Ll(\Aa) = \Ll(\Mm)$.
-\end{lemma}
-\begin{proof}
-    Let $\Aa = (Q, \Sigma, \delta, q_0, p)$ be parity automaton.
-    Its acceptance condition is also a Muller acceptance condition as we can take
-    \[
-        \Ff = \setst{F \subseteq Q}{\min_{q \in F} ~p(q) \even}
-    \]
-    which is a Muller condition.
-\end{proof}
-
 
 \begin{lemma}
     Let $\Aa$ be a deterministic parity automaton,
     then there exists a Büchi automaton $\Bb$
-    such that $\Ll(\Aa) = \Mm(\Bb)$.
+    such that $\Ll(\Aa) = \Ll(\Bb)$.
 \end{lemma}
 \begin{proof}
     Given $\Aa = (Q, \Sigma, \delta, q_0, p)$ a parity automaton,
@@ -666,7 +672,7 @@ what happens to be in this specific example.
         \item The set of states of \Bb is the disjoint union of the $Q_{\geq i}$, for all even $i$, plus one
         copy of $Q$: \[
                 Q' = Q \sqcup \bigsqcup_{i \even} Q_{\geq i} =
-                Q \sqcup \setst{(q, i) \in Q \times \N}{p(q) \geq i \wedge i \even}
+                Q \sqcup \bigsetst{(q, i) \in Q \times \N}{p(q) \geq i \wedge i \even}
             \]
         \item The initial state is $q_0' = q_0 \in Q'$.
         \item The accepting states of \Bb are the states of priority $i$ in the copy of $Q_{\geq i}$:
@@ -686,17 +692,104 @@ what happens to be in this specific example.
     \end{itemize}
 
     \paragraph*{Correctness of the construction} Let $w \in \Ll(\Aa)$ be and $r \in \infseq{Q}$
-    be the corresponding accepting run. Let $p_{min}$ be the minimum prioritythat apprears infinitely many times
-    in $r$ and let $N = \min \setst{n \in \N}{\forall k \geq n~ p(r_k) \geq p_{min}}$
+    be the corresponding accepting run. Let $p_{min}$ be the minimum priority
+    that appears infinitely many times
+    in $r$ and let $N = \min \setst{n \in \N}{\forall k \geq n, p(r_k) \geq p_{min}}$
     be the time from which the run never visit a state with a priority lower than $p_{min}$.
     Then the run $q := r\restr{N-1} \concat (r_N, p_{min}) \concat (r_{N+1}, p_{min}) \concat \dots$
     is an accepting run in \Bb.
 
 \end{proof}
 
-\todo{Add example of parity to buchi automaton construction}
+\begin{example}
+    In order to illustrate this construction, we will convert the complement of our
+    favourite parity automaton into a Büchi automaton.
 
+    \begin{center}
+        \begin{tikzpicture}[>=latex',join=bevel,node distance=70bp]
+            \node[initial, state] (1) {2};
+            \node[state, right of=1] (2) {1};
+            \node[state, right of=2] (3) {0};
 
+            \path (1) edge[edge0, loop above] (1)
+                    edge[edge1, bend left] node {1} (2)
+                (2) edge[edge0, bend left] node {0} (1)
+                    edge[edge1, bend left] node {1} (3)
+                (3) edge[edge0, bend left=45] (1)
+                    edge[edge1, loop above] (3);
+        \end{tikzpicture}
+    \end{center}
+
+    This automaton accepts words which if they have infinitely many \texttt{1}s,
+    then they have infinitely many \texttt{11}s.
+    The automaton can accept words in two different ways, either
+    the minimal priority occurring infinitely many times is 2 or 0.
+    If it is 2, there are finitely many ones, and the tail of the word
+    is only zeros. If it is 0, then there are infinitely many \texttt{11}s.
+
+    With our construction, we name the nodes with their priority, as no two nodes
+    have the same priority. We have $Q_{\leq 0} = Q = \set{0, 1, 2}$ and
+    $Q_{\geq 2} = \set{2}$, so the Büchi automaton should have 7 states.
+
+    \begin{center}
+        \begin{tikzpicture}[>=latex',join=bevel,node distance=70bp]
+            % Copy Q
+            \node[state, initial] (n2) {2};
+            \node[state, right of=n2] (n1) {1};
+            \node[state, right of=n1] (n0) {0};
+
+            \path (n2) edge[edge0, loop left] (n2)
+                    edge[edge1, bend left] (n1)
+                (n1) edge[edge0, bend left] (n2)
+                    edge[edge1, bend left] (n0)
+                (n0) edge[edge0, bend right=45] (n2)
+                    edge[edge1, loop right] (n0);
+
+            % Copy Q0
+
+            \node[state] (n20) at (0, -4) {2};
+            \node[state, right of=n20] (n10) {1};
+            \node[state, accepting, right of=n10] (n00) {0};
+
+            \path (n20) edge[edge0, loop left] (n20)
+                    edge[edge1, bend left] (n10)
+                (n10) edge[edge0, bend left] (n20)
+                    edge[edge1, bend left] (n00)
+                (n00) edge[edge0, bend left=45] (n20)
+                    edge[edge1, loop right] (n00);
+
+            % Copy Q2
+            \node[state, accepting] (n22) at (0, 4) {2};
+            \path (n22) edge[edge0, loop left] (n22);
+
+            % Edges between copies
+            \path (n2) edge[edge0] (n22)
+                    edge[edge0] (n20)
+                    edge[edge1] (n10)
+                (n1) edge[edge0,out=255,in=70] (n20)
+                    edge[edge1] (n00)
+                (n0) edge[edge0] (n00)
+                    edge[edge1,out=240,in=50] (n20)
+            ;
+
+            \begin{scope}[on background layer]
+                \draw[airforceblue,fill=airforceblue!5] ($(n2) - (1.5, 1.5)$) rectangle ($(n0) + (1.5, 1.5)$);
+                \draw[airforceblue,fill=airforceblue!5] ($(n20) - (1.5, 1.5)$) rectangle ($(n00) + (1.5, 1.5)$);
+                \draw[airforceblue,fill=airforceblue!5] ($(n22) - (1.5, 1.5)$) rectangle ($(n0) + (1.5, 5.5)$);
+            \end{scope}
+
+            \node[airforceblue,anchor=south west] at ($(n20) - (1.5, 1.5)$) {$Q_{\geq 0}$};
+            \node[airforceblue,anchor=south west] at ($(n2) - (1.5, 1.5)$) {$Q$};
+            \node[airforceblue,anchor=south west] at ($(n22) - (1.5, 1.5)$) {$Q_{\geq 2}$};
+        \end{tikzpicture}
+    \end{center}
+
+    Note that the number in the states do not have any specific meaning, they are only reminder
+    of which node from the original automaton they come from.
+
+\end{example}
+
+\todo{Show that the \borelpi{2} automton cannot be made with det Buchi}
 
 \subsection{The Safra construction}
 \label{sec:safra}
@@ -705,11 +798,11 @@ There is one equivalence between automata that we did not prove
 in the last section: every language that is recognised by a
 non-deterministic Büchi automaton can be recognised by a
 deterministic Muller automaton. This result concludes
-the proof of \ref{thm:all-automata-are-the-same} and
+the proof of \autoref{thm:all-automata-are-the-same} and
 is the most important result that we will use in the sequel.
-Indeed it makes the complementation of a non-deterministic Büchi automaton
-simpler.
-The proof is also very interesting in itself and makes use of
+Indeed, it allows us to complement non-deterministic Büchi automata
+which are very hard to complement otherwise (as is usually the case with non-deterministic automata).
+The proof is also quite interesting by itself and makes use of
 Safra trees.
 
 \begin{definition}
@@ -1038,16 +1131,12 @@ formulas.
 
 In this section, we we look at a few instances of the Safra construction.
 The following Büchi automaton on the language $\set{0, 1}$ recognises
-all the infinite words that have infinitely many \verb|1| but only finitely many \verb|11|.
+all the infinite words that have infinitely many \verb|1|
+but only finitely many \verb|11|.
 
 \begin{center}
     \input{fig/buchi-1-no-11.tex}
 \end{center}
-
-To facilitate the reading of the automata, we always use orange arrows for
-transitions when reading the letter \verb|0|, and blue arrows for the letter \verb|1|,
-and we may sometimes omit the labels. The initial state is denoted by
-an incoming black arrow and finite states are double circled.
 
 Converting this automaton to a deterministic Müller automaton,
 we obtain the following:
@@ -1566,7 +1655,7 @@ language. The two notions are therefore equivalent.
 
 To that extent, we will introduce deterministic Muller
 automata and show that they are equivalent to (non-deterministic)
-Büchi automatons. This will be used to show
+Büchi automata. This will be used to show
 that it is possible to complement a Büchi automaton.
 We will then show that S1S is equivalent
 to a simpler version with fewer constructs, $\text{S1S}_0$.

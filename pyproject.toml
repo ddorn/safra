@@ -1,0 +1,9 @@
+[tool.mypy]
+strict=true
+
+[tool.yapf]
+column_limit = 100
+continuation_align_style = "space"
+coalesce_brackets = true
+indent_dictionary_value = true
+spaces_before_comment = [2, 2]
