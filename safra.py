@@ -1,22 +1,21 @@
 from __future__ import annotations
-from collections import deque
-
-from dataclasses import dataclass
 import dataclasses
 import subprocess
-import dot2tex
-import click
+from collections import deque
+from dataclasses import dataclass
 from pprint import pprint
+from random import randrange, shuffle
 from textwrap import indent
 from typing import Generator, Generic, Iterator, TypeVar
 
+import click
+import dot2tex
 
-Label = TypeVar('Label')
 fset = frozenset
-
+Label = str
 
 @dataclass(frozen=True)
-class SafraNode(Generic[Label]):
+class SafraNode:
     """
     A node in the Safra tree.
     """
@@ -26,17 +25,17 @@ class SafraNode(Generic[Label]):
     marked: bool = False
 
 
-class SafraTree(dict[int, SafraNode[Label]]):
+class SafraTree(dict[int, SafraNode]):
     """
     A Safra tree, where each node is labeled with an integer.
     """
 
     @classmethod
-    def new(cls, initial_state: Label) -> SafraTree[Label]:
+    def new(cls, initial_state: Label) -> SafraTree:
         return cls({0: SafraNode(0, fset([initial_state]), ())})
 
-    def power(self, buchi: BuchiAutomaton[Label], input: int) -> SafraTree[Label]:
-        result = SafraTree[Label]()
+    def power(self, buchi: BuchiAutomaton, input: int) -> SafraTree:
+        result = SafraTree()
         for name, node in self.items():
             result[name] = SafraNode(name,
                                      label=fset().union(*(buchi.next(s, input)
@@ -46,61 +45,63 @@ class SafraTree(dict[int, SafraNode[Label]]):
 
         return result
 
-    def branch_accepting(self, accepting: set[Label]) -> SafraTree[Label]:
+    def branch_accepting(self, accepting: set[Label]) -> SafraTree:
 
         available_names = [i for i in reversed(range(2 * len(self))) if i not in self]
 
-        def get_nodes(name: int) -> Iterator[SafraNode[Label]]:
+        def get_nodes(name: int) -> Iterator[SafraNode]:
             node = self[name]
 
             acc = node.label.intersection(accepting)
             if acc:
                 new_name = available_names.pop()
                 yield dataclasses.replace(node, children=node.children + (new_name, ))
-                yield SafraNode[Label](new_name, acc, ())
+                yield SafraNode(new_name, acc, ())
             else:
                 yield node
             for c in node.children:
                 yield from get_nodes(c)
 
-        return SafraTree[Label]({n.name: n for n in get_nodes(0)})
+        return SafraTree({n.name: n for n in get_nodes(0)})
 
-    def make_disjoint(self) -> SafraTree[Label]:
+    def make_disjoint(self) -> SafraTree:
 
-        def get_nodes(name: int, parent: int | None) -> Iterator[SafraNode[Label]]:
+        def get_nodes(name: int, parent: SafraNode | None) -> Iterator[SafraNode]:
             node = self[name]
 
             if parent is None:
-                yield node
+                new = node
             else:
-                siblings = self[parent].children
+                siblings = parent.children
                 older_siblings = siblings[:siblings.index(name)]
-                yield dataclasses.replace(node,
-                                          label=node.label.difference(*(self[s].label
-                                                                        for s in older_siblings)))
+                older_labels = fset().union(*(self[c].label for c in older_siblings))
+                # We remove those that have been removed from the parent also
+                new_label = node.label.difference(older_labels).intersection(parent.label)
+                new = dataclasses.replace(node, label=new_label)
 
+            yield new
             for c in node.children:
-                yield from get_nodes(c, name)
+                yield from get_nodes(c, new)
 
         return SafraTree({n.name: n for n in get_nodes(0, None)})
 
-    def union_children(self) -> SafraTree[Label]:
+    def union_children(self) -> SafraTree:
 
-        def get_nodes(name: int) -> Iterator[SafraNode[Label]]:
+        def get_nodes(name: int) -> Iterator[SafraNode]:
             node = self[name]
 
             if set().union(*(self[c].label
                              for c in node.children)) == node.label and node.label != fset():
-                yield SafraNode[Label](node.name, node.label, (), True)
+                yield SafraNode(node.name, node.label, (), True)
             else:
                 yield node
                 for c in node.children:
                     yield from get_nodes(c)
 
-        return SafraTree[Label]({n.name: n for n in get_nodes(0)})
+        return SafraTree({n.name: n for n in get_nodes(0)})
 
-    def remove_empty(self) -> SafraTree[Label]:
-        result = SafraTree[Label]()
+    def remove_empty(self) -> SafraTree:
+        result = SafraTree()
         for name, node in self.items():
             if node.label or node.name == 0:                                               # We allways keep the root
                 result[name] = SafraNode(name, node.label,
@@ -108,7 +109,7 @@ class SafraTree(dict[int, SafraNode[Label]]):
                                          node.marked)
         return result
 
-    def next(self, buchi: BuchiAutomaton[Label], input: int) -> SafraTree[Label]:
+    def next(self, buchi: BuchiAutomaton, input: int) -> SafraTree:
         return (self
                 .branch_accepting(buchi.accepting_states) # 2: create new children
                 .power(buchi, input)                  # 1: First step
@@ -116,7 +117,7 @@ class SafraTree(dict[int, SafraNode[Label]]):
                 .remove_empty()                           #    and remove empty nodes
                 .union_children())                        # 4: Mark children
 
-    def next_latex_details(self, buchi: BuchiAutomaton[Label], input: int) -> str:
+    def next_latex_details(self, buchi: BuchiAutomaton, input: int) -> str:
 
         def arrow(legend: str) -> str:
             l1, _, l2 = legend.partition(' ')
@@ -182,7 +183,7 @@ class SafraTree(dict[int, SafraNode[Label]]):
 
 
 @dataclass
-class Automaton(Generic[Label]):
+class Automaton:
     """Base class for automaton"""
 
     initial_state: Label
@@ -221,7 +222,7 @@ class Automaton(Generic[Label]):
 
 
 @dataclass
-class BuchiAutomaton(Automaton[Label]):
+class BuchiAutomaton(Automaton):
     """A non-deterministic Büchi automaton."""
 
     transition_function: dict[tuple[Label, int], set[Label]]
@@ -235,16 +236,22 @@ class BuchiAutomaton(Automaton[Label]):
     def next(self, state: Label, input: int) -> set[Label]:
         return self.transition_function.get((state, input), set())
 
-    def to_muller(self) -> tuple[MullerAutomaton[int], dict[int, SafraTree[Label]]]:
+    def to_muller(self) -> tuple[MullerAutomaton, dict[int, SafraTree]]:
         """Convert to a deterministic Muller automaton using the Safra construction"""
 
         start = SafraTree.new(self.initial_state)
         to_compute = deque([(start, 0), (start, 1)])
         transition = {}
-        ids: list[SafraTree[Label]] = []
+        ids: list[SafraTree] = []
         while to_compute:
-            print("left:", len(to_compute), "computed:", len(transition))
+            # if len(to_compute) > 1000:
+            #     for i in range(100):
+            #         print(to_compute[i][0])
+            #     raise ValueError("Too many nodes to compute")
+            # print("left:", len(to_compute), "computed:", len(transition))
             tree, input = to_compute.popleft()
+            if len(transition) % 100 == 0:
+                print(tree)
             try:
                 id = ids.index(tree)
             except ValueError:
@@ -264,7 +271,7 @@ class BuchiAutomaton(Automaton[Label]):
 
 
 @dataclass
-class MullerAutomaton(Automaton[Label]):
+class MullerAutomaton(Automaton):
     """A deterministic Muller automaton."""
 
     transition_function: dict[tuple[Label, int], Label]
@@ -276,7 +283,7 @@ class MullerAutomaton(Automaton[Label]):
 
 
 A, B, C, D, E, F, G, Z = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'Z']
-AUTOMATA: list[BuchiAutomaton[str]] = [
+AUTOMATA: list[BuchiAutomaton] = [
     BuchiAutomaton(
         initial_state=A,
         transition_function={
@@ -296,7 +303,7 @@ AUTOMATA: list[BuchiAutomaton[str]] = [
             (B, 0): {B},
             (B, 1): {C},
             (C, 0): {B},
-            (C, 1): {D, G},
+            (C, 1): {D},
             (D, 0): {D},
             (D, 1): {E},
             (E, 0): {D},
@@ -396,7 +403,7 @@ AUTOMATA: list[BuchiAutomaton[str]] = [
         },
         accepting_states={B},
         initial_state=C,
-    )
+    ),
 ]
 
 
@@ -413,17 +420,40 @@ def main(edge_len: float, no_trees: bool, safra_transition: str | None, prog: st
 
     buchi = AUTOMATA[automaton]
 
-    if safra_transition is None:
-        muller, safra_trees = buchi.to_muller()
-        if no_trees:
-            labels = None
-        else:
-            labels = {k: v.to_latex_forest() for k, v in safra_trees.items()}
+    labels = []
+    # while len(labels) < 100:
+    best = None
+    size = 0
+    for _ in range(1000):
+        n = 6
+        def random_transition():
+            s = list(range(n))
+            shuffle(s)
+            return set(s[:randrange(3)])
+        tr = {
+            (i, k): random_transition()
+            for i in range(n)
+            for k in range(2)
+        }
+        buchi = BuchiAutomaton(0, tr, random_transition())
 
-        # print(buchi.to_graphviz())
+        muller, labels = buchi.to_muller()
+        if len(labels) > size:
+            best = buchi
+            size = len(labels)
+            print(size)
+    buchi = best
+
+    if safra_transition is None:
+
         if draw_buchi:
             dot = buchi.to_graphviz()
         else:
+            muller, safra_trees = buchi.to_muller()
+            if no_trees:
+                labels = None
+            else:
+                labels = {k: v.to_latex_forest() for k, v in safra_trees.items()}
             dot = muller.to_graphviz(labels, edge_len)
 
         template = open('template.tex', 'r').read() + '\n'
@@ -441,8 +471,10 @@ def main(edge_len: float, no_trees: bool, safra_transition: str | None, prog: st
             f.write(tex)
         subprocess.check_call(['pdflatex', '--output-directory', 'out/', output])
 
+        pprint(buchi)
+
     else:
-        safra = SafraTree[str]({
+        safra = SafraTree({
             0: SafraNode(0, fset(buchi.initial_state), ()),
         })
 
