@@ -3,8 +3,6 @@ from collections import deque
 
 from dataclasses import dataclass
 import dataclasses
-from distutils.log import debug
-from io import StringIO, TextIOWrapper
 import subprocess
 import dot2tex
 import click
@@ -12,7 +10,6 @@ from pprint import pprint
 from textwrap import indent
 from typing import Generator, Generic, Iterator, TypeVar
 
-from numpy import deprecate_with_doc
 
 Label = TypeVar('Label')
 fset = frozenset
