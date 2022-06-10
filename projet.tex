@@ -930,7 +930,7 @@ added.
                     by $\bigcup_{q \in l} \delta(q, s)$,
                     the set of state that are reachable from some state in $l$ while reading the letter $s$.
                 \item \emph{Remove states}:
-                    remove from each label the states that appear also in older siblings.
+                    remove from each label (and its children) the states that appear also in older siblings.
                     Older siblings are nodes on the left of a given node, or equivalently
                     nodes with a smaller index in the sibling list.
                     At that point, labels of siblings are disjoints.
