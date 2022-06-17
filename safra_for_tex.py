@@ -1,19 +1,9 @@
-#!/bin/env python3
-
 """
 Conversion from non-deterministic Büchi automata to deterministic Muller
 automata via the Safra construction.
 
 This script includes visualisation of the automata with the help of Graphviz and Tikz/Latex.
 Both must be installed to use this script.
-
-Dependencies:
- - graphviz: https://graphviz.org/
- - python: pip install dot2tex click
- - pdflatex, from you favorite latex distribution.
-
-
-
 
 Author: Diego Dorn, 2022
 License: WTFPL
@@ -26,7 +16,6 @@ import subprocess
 from collections import deque
 from dataclasses import dataclass
 from pprint import pprint
-from random import randrange, shuffle
 from textwrap import indent
 from typing import Generator, Iterator
 
@@ -131,6 +120,7 @@ class SafraTree(dict[int, SafraNode]):
         return SafraTree({n.name: n for n in get_nodes(0)})
 
     def remove_empty(self) -> SafraTree:
+        """Remove empty nodes."""
         result = SafraTree()
         for name, node in self.items():
             if node.label or node.name == 0:                                               # We allways keep the root
@@ -146,48 +136,6 @@ class SafraTree(dict[int, SafraNode]):
                 .make_disjoint()                              # 3: Clean up
                 .remove_empty()                               #    and remove empty nodes
                 .mark_nodes())                                # 4: Mark children
-
-    def next_latex_details(self, buchi: BuchiAutomaton, input: int) -> str:
-        """Show the 5 steps of the construction in LaTeX."""
-
-        def arrow(legend: str) -> str:
-            l1, _, l2 = legend.partition(' ')
-            if l2:
-                legend = r"\substack{\text{%s}\\\text{%s}}" % (l1, l2)
-            else:
-                legend = r"\text{%s}" % l1
-            return "$\\xto{" + legend + "}$"
-
-        steps = [self.to_latex_forest()]
-        s = self
-        s = s.branch_accepting(buchi.accepting_states)
-        steps += [arrow('Branch accepting'), s.to_latex_forest()]
-        s = s.power(buchi, input)
-        steps += [arrow('Power set'), s.to_latex_forest()]
-        s = s.make_disjoint()
-        steps += [arrow('Make disjoint'), s.to_latex_forest()]
-        s = s.remove_empty()
-        steps += [arrow('Remove empty'), s.to_latex_forest()]
-        s = s.mark_nodes()
-        steps += [arrow('Mark nodes'), s.to_latex_forest()]
-        return '\n'.join(steps)
-
-    def __str__(self) -> str:
-        """Show the tree in a human readable way."""
-
-        def node_str(name: int) -> str:
-            node = self[name]
-            label = '{' + ', '.join(map(str, node.label)) + '}'
-            main = f"{name}: {label}"
-            if node.marked:
-                main += ' !'
-
-            children = '\n'.join(map(node_str, node.children))
-            if children:
-                main += '\n' + indent(children, '    ')
-            return main
-
-        return node_str(0)
 
     def to_latex_forest(self) -> str:
         """Get the tree in LaTeX format."""
@@ -319,237 +267,97 @@ class MullerAutomaton(Automaton):
             yield s, i, next_state
 
 
-def random_buchi(node_count: int, retries: int = 1) -> BuchiAutomaton:
-    assert retries > 0
-
-    def random_transition() -> set[Label]:
-        nodes = list(range(node_count))
-        shuffle(nodes)
-        return set(nodes[:randrange(3)])
-
-    size = 0
-    # for _ in range(retries):
-    while size != 180:
-        buchi = BuchiAutomaton(0, {(i, k): random_transition()
-                                   for i in range(node_count)
-                                   for k in range(2)}, random_transition())
-        _, labels = buchi.to_muller()
-        if len(labels) > 100:
-            best = buchi
-            size = len(labels)
-            pprint(buchi)
-            print(size)
-            yield buchi
-
-        if len(labels) == 180:
-            return buchi
-
-    return best
-
-
 A, B, C, D, E, F, G, Z = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'Z']
 AUTOMATA: list[BuchiAutomaton] = [
     BuchiAutomaton(  # Infinitely many 1 but finitely many 11
         initial_state=A,
         transition_function={
-            (A, 0): {A, B},
-            (A, 1): {A, B},
-            (B, 0): {B},
-            (B, 1): {C},
-            (C, 0): {B},
-            (C, 1): set(),
+            (A, 0): {A, B}, (A, 1): {A, B}, (B, 0): {B}, (B, 1): {C},
+            (C, 0): {B}, (C, 1): set(),
         },
         accepting_states={C},
     ),
     BuchiAutomaton(  # Infinitely many 1 and iff infinitely many 11 then infinitely many 111
         transition_function={
-            (A, 0): {A, B, D},
-            (A, 1): {A, B, D},
-            (B, 0): {B},
-            (B, 1): {C},
-            (C, 0): {B},
-            (C, 1): set(),
-            (D, 0): {D},
-            (D, 1): {E},
-            (E, 0): {D},
-            (E, 1): {F},
-            (F, 0): {D},
-            (F, 1): {G},
-            (G, 0): {D},
-            (G, 1): {D, G},
+            (A, 0): {A, B, D}, (A, 1): {A, B, D}, (B, 0): {B}, (B, 1): {C},
+            (C, 0): {B}, (C, 1): set(), (D, 0): {D}, (D, 1): {E}, (E, 0): {D},
+            (E, 1): {F}, (F, 0): {D}, (F, 1): {G}, (G, 0): {D}, (G, 1): {D, G},
         },
         accepting_states={C, G},
         initial_state=A,
     ),
     BuchiAutomaton(  # zeros always followed by the same parity of ones
         transition_function={
-            (A, 0): {B},
-            (A, 1): {C},
-            (B, 0): {A},
-            (B, 1): {D},
-            (C, 0): set(),
-            (C, 1): {D, Z},
-            (D, 0): set(),
-            (D, 1): {C},
-            (Z, 0): {B},
-            (Z, 1): set(),
+            (A, 0): {B}, (A, 1): {C}, (B, 0): {A}, (B, 1): {D}, (C, 0): set(),
+            (C, 1): {D, Z}, (D, 0): set(), (D, 1): {C}, (Z, 0): {B}, (Z, 1):
+            set(),
         },
         accepting_states={Z},
         initial_state=A
     ),
-    BuchiAutomaton(  # 4 states but produces 270 transitions in the Muller automtaton
+    BuchiAutomaton(  # 4 states but produces 270 in the Muller automtaton
         initial_state=0,
         transition_function={
-            (0, 0): {0},
-            (0, 1): {3},
-            (1, 0): {0, 3},
-            (1, 1): {1},
-            (2, 0): {1},
-            (2, 1): {0, 2},
-            (3, 0): {2},
-            (3, 1): set()},
+            (0, 0): {0}, (0, 1): {3}, (1, 0): {0, 3}, (1, 1): {1}, (2, 0): {1},
+            (2, 1): {0, 2}, (3, 0): {2}, (3, 1): set()},
         accepting_states={0}
-    ),
-BuchiAutomaton(initial_state=0,
-               transition_function={(0, 0): {1},
-                                    (0, 1): set(),
-                                    (1, 0): {0},
-                                    (1, 1): {2},
-                                    (2, 0): {1, 2},
-                                    (2, 1): {3},
-                                    (3, 0): {3},
-                                    (3, 1): {1}},
-               accepting_states={0}),
-    BuchiAutomaton(initial_state=0,
-               transition_function={(0, 0): set(),
-                                    (0, 1): {1},
-                                    (1, 0): {0},
-                                    (1, 1): {3},
-                                    (2, 0): {0, 3},
-                                    (2, 1): {2, 3},
-                                    (3, 0): {0, 2},
-                                    (3, 1): {0}},
-               accepting_states={1}),
-               BuchiAutomaton(initial_state=0,
-               transition_function={(0, 0): set(),
-                                    (0, 1): {3},
-                                    (1, 0): {3},
-                                    (1, 1): set(),
-                                    (2, 0): {2},
-                                    (2, 1): {0},
-                                    (3, 0): {0},
-                                    (3, 1): {1, 2}},
-               accepting_states={1})
+    )
 ]
 
 
 @click.command()
-@click.option('-n', '--no-trees', is_flag=True, default=False, help="Don't draw the trees inside the nodes of the Muller automaton.")
-@click.option('-s', '--safra-transition', type=str, default=None, help="Draw the steps to build a specific transition in the Muller automata. Pass a word of 0 and 1 and it will show the last transition when reading this word.")
-@click.option('--prog', default='dot', type=str, help='The program to use to render the graph. "dot" and "neato" work best.')
-@click.option('--edge-len', default=1.0, type=float, help="Target length for edges for the neato layout. [default=1.0]")
-@click.option('-o', '--output', default='graph.tex', help="Latex file to store the graph to. [default=graph.tex]")
-@click.option('-b', '--draw-buchi', is_flag=True, help="Draw the Buchi automaton instead of the Muller automton.")
+@click.option('-n', '--no-trees', is_flag=True, default=False)
+@click.option('--prog',
+              default='dot',
+              type=str,
+              help='The program to use to render the graph. "dot" and "neato" work best.')
+@click.option('--edge-len',
+              default=1.0,
+              type=float,
+              help="Target length for edges for the neato layout.")
+@click.option('-o', '--output', default='graph.tex', help="Latex file to store the graph to.")
+@click.option('-b',
+              '--draw-buchi',
+              is_flag=True,
+              help="Draw the Buchi automaton instead of the Muller automton.")
 @click.argument('automaton', default=-1)
 def main(edge_len: float,
          no_trees: bool,
-         safra_transition: str | None,
          prog: str,
          output: str,
          automaton: int,
          draw_buchi: bool = False) -> None:
-    """Draw and convert a Buchi automaton into a Muller automaton.
-
-    To specifiy which automaton to use, modify the AUTOMATA list in the code,
-    and then set the AUTOMATON argument to the index of the automaton in the list.
-    """
+    """Draw an convert Buchi automata into Muller automata.
+    AUTOMATA is the index of the automaton to work with inside the AUTOMATA list."""
 
     buchi = AUTOMATA[automaton]
 
-    if safra_transition is None:
-
-        # for buchi in random_buchi(4):
-            if draw_buchi:
-                dot = buchi.to_graphviz()
-            else:
-                muller, safra_trees = buchi.to_muller()
-                if no_trees:
-                    labels = None
-                else:
-                    labels = {k: v.to_latex_forest() for k, v in safra_trees.items()}
-                    print("Labels:", len(labels))
-                dot = muller.to_graphviz(labels, edge_len)
-
-            template = open('template.tex', 'r').read() + '\n'
-            tex = dot2tex.dot2tex(
-                dot,
-                prog=prog,
-                format='tikz',
-                texmode='raw',
-                crop=True,
-                autosize=True,
-                tikzedgelabels=True,
-                template=template,
-            )
-            with open(output, 'w') as f:
-                f.write(tex)
-            subprocess.check_call(['pdflatex', '--output-directory', 'out/', output], stdout=subprocess.DEVNULL)
-
+    if draw_buchi:
+        dot = buchi.to_graphviz()
     else:
-        safra = SafraTree({
-            0: SafraNode(0, fset(buchi.initial_state), ()),
-        })
+        muller, safra_trees = buchi.to_muller()
+        if no_trees:
+            labels = None
+        else:
+            labels = {k: v.to_latex_forest() for k, v in safra_trees.items()}
+        dot = muller.to_graphviz(labels, edge_len)
 
-        for i, letter in enumerate(safra_transition[:-1]):
-            safra = safra.next(buchi, int(letter))
+    template = open('template.tex', 'r').read() + '\n'
+    tex = dot2tex.dot2tex(
+        dot,
+        prog=prog,
+        format='tikz',
+        texmode='raw',
+        crop=True,
+        autosize=True,
+        tikzedgelabels=True,
+        template=template,
+    )
+    with open(output, 'w') as f:
+        f.write(tex)
+    subprocess.check_call(['pdflatex', '--output-directory', 'out/', output])
 
-        print(r"""
-\input{../preambule.tex}
-\forestset{
-    safra/.style={
-        for tree={
-            draw,
-            rectangle split,
-            rectangle split parts=2,
-            rectangle split horizontal,
-            % rectangle split part fill={red, white},
-            fill=white,
-            rounded corners,
-            draw=black,
-            anchor=north,
-        },
-    },
-}
-
-\tikzset{
-    safrastate/.style={
-        thin,circle,fill=ghostwhite,
-    },
-    edge0/.style={
-        atomictangerine,
-        ultra thick,
-        every node/.style={
-            draw, circle,
-            text=black,
-            fill=white,
-        }
-    },
-    edge1/.style={
-        bondiblue,
-        ultra thick,
-        every node/.style={
-            draw, circle,
-            text=black,
-            fill=white,
-        },
-    }
-}
-
-\forestset{ default preamble={ for tree={draw,shape=rectangle split, rectangle split parts=2, rectangle split horizontal,anchor=north} } }
-\begin{document}
-        """)
-        print(safra.next_latex_details(buchi, int(safra_transition[-1])))
-        print(r"\end{document}")
+    pprint(buchi)
 
 
 if __name__ == "__main__":

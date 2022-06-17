@@ -4,10 +4,25 @@
 \title{Between decideable logics: $\mathbf{\omega}$-automata and infinite games}
 \author{Diego Dorn}
 
+\renewcommand{\todo}[1]{}
+
 \newcommand{\infiniteWords}{\infseq{(\IB^n)}}
 \newcommand{\Sing}{\mathrm{Sing}}
 \newcommand{\Succ}{\mathrm{Succ}}
-\newcommand{\pathto}[1]{\overset{#1}\leadsto}
+
+\newlength{\LETTERheight}
+\AtBeginDocument{\settoheight{\LETTERheight}{I}}
+\newcommand{\pathto}[1]{\mathrel{\overset{#1}{
+\raisebox{0.24\LETTERheight}{\tikz \draw [->,
+line join=round,
+decorate, decoration={
+    zigzag,
+    segment length=4,
+    amplitude=.9,
+    post=lineto,
+    post length=2pt
+}] (0,0) -- (0.5,0);}
+}}}
 \newcommand{\inlinesafra}[1]{
     \pbox[c]{5cm}{
     \begin{forest}safra,
@@ -127,8 +142,8 @@
 \input{first_page.tex}
 
 
-\listoftodos[Remaining to be done]
-\newpage
+% \listoftodos[Remaining to be done]
+% \newpage
 
 % \setcounter{section}{-1}
 \section*{Introduction}
@@ -161,14 +176,50 @@ but it is still an open question if it is possible to do it in polynomial time.
 % to show decidability and also algorithmic properties of this logic.
 % In particular, we study the Safra construction, whic
 
-
+\todo{add contents section}
 
 \tableofcontents
 
 
-\todo{Introduce the notations}
+\clearpage
+\section*{Conventions}
+
+\paragraph{Ordinals}
+We use \N to denote the set of integers, which contains 0.
+It is the same set as \w, the first infinite ordinal.
+We use them interchangebly, but \w makes focus on the order
+whereas \N is used more as a set.
+
+\paragraph{Sequences} A sequence, or \w-word, on a set $X$ is a function
+from \w to $X$. We denote the set of sequences on $X$ as $\infseq{X}$
+and given $x \in X$ and an integer $n \in \N$, we write $x_n$ instead of $x(n)$ to have less parentheses.
+
+A finite sequence, or word, on a set $X$ is a function $x: \set{0, ..., n} \to X$,
+where $n$ is the length of the finite sequence, also denoted $\abs{x}$.
+The set of finite sequences on $X$ is $\finiteseq{X}$.
+Given two finite sequences $s$ and $t$, we write $s \concat t \in \finiteseq{X}$
+for the concatenation of the two finite sequences.
+
+Given a sequence $x$, finite or infinite, and an integer $n \in \N$,
+we write $x \restr n$ for the sequence $x$ restricted to the first $n$ elements.
+If $n < m$, we write $x_{n..m}$ for the subsequence of $x$ that starts at
+position $n$ and ends at position $m$, both included.
+
+\paragraph{Sets}
+An alphabet is any finite set, whose elements are called letters or symbols.
+Given a set $X$, $\Pp(X)$ is the power set of $X$, which contains every subset of $X$.
+We use the symbol $\subseteq$ for the non-strict inclusion of one set to the other
+and $\subsetneq$ for the strict inclusion.
+
+\paragraph{Formulas}
+Formulas are trees, where each node contains a symbol, variable, logical connector,
+quantifer or term. Given a formula \p and two terms $x$ and $y$,
+we write $\phi[x := y]$ for the formula where every occurence of $x$ is replaced by $y$.
+
+\clearpage
+
 \section{Automata on infinite words}
-\subsection{Definitions}
+\subsection{Three kinds of automata}
 
 In the following sections
 we will make good use of automata that read infinite words.
@@ -205,6 +256,7 @@ or reject their inputs.
 
 \end{definition}
 
+
 This provides a general context in which automata can read infinite
 words. However, it is too general because the accepting condition
 can be arbitrarily complex and even non-computable.
@@ -228,7 +280,7 @@ elements of $w$ that appear at infinitely many indices in $w$.
 
 \begin{definition}
     Let $w \in \infseq{X}$ be sequence on any set $X$.
-    We definie $\Inf(w) \subseteq X$ as
+    We define $\Inf(w) \subseteq X$ as
     \[
         \Inf(w) := \setst{x \in X}{
             \forall N \in \N~
@@ -468,7 +520,7 @@ it own \autoref{sec:safra}.
         \item The set of states is $Q' = Q \times F$.
         \item The initial state is $q'_0 = (q_0, f_0)$.
         \item The priority of a state $(q, f) \in Q'$ is \[
-            p((q, f)) = \begin{cases}
+            p\Par[1]{(q, f)} = \begin{cases}
                 1 & \tif q \notin F \\
                 2 & \tif (q, f) = (f_0, f_0) \\
                 3 & \otherwise.
@@ -994,15 +1046,14 @@ added.
         Then for all states $r \in R$ there exists
         a path from $p \in P$ to $r$ in the automaton $\Bb$
         that can be taken on input $w_n, \dots, w_{m-1}$.
-        We write
-        \todo{Define the notation for states above}
+        We write this as
         \[
-            \Bb : P \pathto{w_n^m} R
+            \Bb : P \pathto{w_{n..m}} R
             \quad\text{ for }\quad
             \forall r \in R~
-            \exists p \in P~
-            \parenthesis{
-                \Bb : p \pathto{w_n^m} r
+            \exists p \in P
+            \Par{
+                \Bb : p \pathto{w_{m..m}} r
             }
         \]
 
@@ -1016,9 +1067,9 @@ added.
         rule, which means precisely that, $r \in R$ if and only if
         there is some $p \in P$ such that $r \in \delta(p, w_n)$.
         For the recursive case, let $P'$ be the label of node $N$ in
-        $t_{m-1}$. By hypothesis, $\Bb : P \pathto{w_n^{m-1}} P'$
-        and $\Bb : P' \pathto{w_{m-1}^m} R$. Since the relation is clearly
-        transitive, it follows that $\Bb : P \pathto{w_n^m} R$.
+        $t_{m-1}$. By hypothesis, $\Bb : P \pathto{w_{n..m-1}} P'$
+        and $\Bb : P' \pathto{w_{m-1..m}} R$. Since the relation is clearly
+        transitive, it follows that $\Bb : P \pathto{w_{n..m}} R$.
 
         For the second part, let $S \subseteq Q$
         be the label of a son of node $N$. Since this son
@@ -1142,7 +1193,7 @@ Converting this automaton to a deterministic Müller automaton,
 we obtain the following:
 
 \begin{center}
-    \input{fig/muller-1-no-11.tex}
+    \scalebox{0.88}{\input{fig/muller-1-no-11.tex}}
 \end{center}
 
 Which accepts a run if the set of states that occur infinitely many times
@@ -1353,8 +1404,75 @@ accepting state (via the \textit{Branch accepting} rule).
 Notice that this construction can produce very complex
 automata, even if there exists a simpler Muller automaton
 for the same language. For instance,
-the following Büchi automaton
-\todo{Put a large automaton here}
+the following Büchi automaton consisting of only four states
+
+\begin{center}
+    \begin{tikzpicture}[>=latex',join=bevel,node distance=3cm]
+    \node[state, initial] (0) {};
+    \node[state, right of=0] (3) {};
+    \node[state, accepting, right of=3] (1) {};
+    \node[state, ] at (60:3cm)  (2) {};
+
+    \path (0) edge[edge1, bend left] node {1} (3)
+          (2) edge[edge0, loop above] (2)
+              edge[edge1] node {1} (0)
+          (3) edge[edge0, bend left] node {0} (0)
+              edge[edge1] node {1} (2)
+              edge[edge1, bend left] node {1} (1)
+          (1) edge[edge0, bend left] node {0} (3);
+    \end{tikzpicture}
+\end{center}
+produces a Muller automaton with 105 states depicted on the next page.
+This is not because this automaton recognises a very complex language
+but rather that that each nod of Safra trees has a label and
+by following path of different length there can be multiple tree that have
+the same labels but different names.
+
+For instance the tree below has six nodes labeled with the with $\set{0, 1, 2, 3}$,
+$\set{1, 2, 3}$ and $\set{3}$, but only the labels changes.
+
+\begin{center}
+\begin{forest}safra,
+[,phantom, s sep = 1cm
+    [\safranode{0}{0123}
+        [\safranode{1}{123}
+            [\safranode{4}{3}]
+        ]
+    ]
+    [\safranode{0}{0123}
+        [\safranode{2}{123}
+            [\safranode{3}{3}]
+        ]
+    ]
+    [\safranode{0}{0123}
+        [\safranode{3}{123}
+            [\safranode{4}{3}]
+        ]
+    ]
+    [\safranode{0}{0123}
+        [\safranode{1}{123}
+            [\safranode{3}{3}]
+        ]
+    ]
+    [\safranode{0}{0123}
+        [\safranode{3}{123}
+            [\safranode{2}{3}]
+        ]
+    ]
+    [\safranode{0}{0123}
+        [\safranode{2}{123}
+            [\safranode{4}{3}]
+        ]
+    ]
+]
+\end{forest}
+\end{center}
+
+There is however, no obvious way to remove the names of each node
+as they are required in some cases to have the correct output.
+
+\includepdf{fig/large-safra.pdf}
+
 % \begin{center}
 % \begin{tikzpicture}[node distance=2.5cm]
 %     \node[state, initial] (A) {A};
@@ -1470,7 +1588,8 @@ For instance, the following formulas are syntactically valid:
 We will not study much of second order logic, but instead
 look at one of its fragments, monadic second order logic.
 
-\paragraph*{Monadic second order logic} or MSO is an extension of
+\begin{definition}
+\emph{Monadic second order logic} or MSO is an extension of
 fisrt order logic and a restriction of second order logic.
 In MSO, valid formulas are formulas of second order logic
 where second order quantification happens only on unary relations.
@@ -1479,25 +1598,79 @@ of the domain (first-order quantification)
 or over subsets of the domain (second-order quantification).
 
 The semantics of MSO is the same as SO semantics.
+\end{definition}
 
-\todo{Add exemples of MSO formulas}
+\begin{examples}
+    We give some formulas of MSO in the context of directed graphs,
+    that is, we consider models of MSO with only one
+    symbol of relation, $E$ of arity 2. We read $E(x, y)$
+    as there is an edge between $x$ and $y$.
 
-% There are two things that are remarkable about
-% this logic, when considered together:
-% \begin{itemize}
-%     \item MSO is very expressive. It can for instance
-%         describe problems at every level of the polynomial hierarchy ($\PHierachy$).
-%     \item MSO is decidable for a large class of models, for instance
-%         infinte strings and trees.
-% \end{itemize}
+    The following formula states that a graph is disconected:
+    \[
+        \underbrace{
+            \exists X
+        }_{\text{there exists a set}}
+        \underbrace{
+            \Par{
+                \forall x~
+                \forall y~
+                X(x) \wedge E(x, y)
+                \implies X(y)
+            }
+        }_{\text{closed under neighbours}}
+        \wedge
+        \underbrace{
+            \Par{
+                \exists x~ X(x)
+            }
+            \wedge
+            \Par{
+                \exists x~ \neg X(x)
+            }
+        }_{\text{and neither empty or full}}
+    \]
+    And this formula states that it is 3-colorable:
+    \begin{align*}
+        \underbrace{
+            \exists X_1\, \exists X_2\, \exists X_3
+        }_{\text{there exists three sets}}
+        & \underbrace{
+                \forall x~
+                X_1(x) \vee X_2(x) \vee X_3(x)
+        }_{\text{covering the graph}}
+        \\& \wedge \underbrace{
+            \forall x~
+            \bigwedge_{i \neq j} \Par[1]{
+                X_i(x) \implies \neg X_j(x)
+            }
+        }_{\text{disjoint}}
+        \\& \wedge \underbrace{
+            \forall x~
+            \forall y~
+            E(x, y) \implies
+            \bigwedge_{i = 1..3} \Par[1]{
+                X_i(x) \implies \neg X_i(y)
+            }
+        }_{\text{and no edge has twice the same color}}
+    \end{align*}
+    Note that here the symbols $\bigwedge$ are not part of the language of MSO,
+    they are meta shorthands to indicate the longer formula it expands to.
+\end{examples}
 
-
+The examples above show that MSO has more expressive power than first
+order logic, as those formulas cannot be expressed in FOL.
+However, checking whether some MSO formula hold on a given graph
+is computationally hard, as this problem belongs to $\PSPACE$.
+It even belongs to $\PSPACE$ when the graph (but not the formula)
+is fixed, as \textsc{QBF} can be encoded straightforwardly in MSO
+on the graph with only one vertex.
 
 \subsection{Decidability}
 
 
-The decidability problem for monadic second order logic
-, in general, is impossible, because it contains first order logic.
+The decidability problem for monadic second order logic,
+in general, is impossible, because it contains first order logic.
 However, in monadic second order logic, the theory of \N with
 the successor (S1S) has been shown to be decidable.
 This theory is also called the theory of infinite strings
@@ -1691,10 +1864,9 @@ as $\text{S1S}_0$ formulas.
     We can eliminate the constant $0$, by using a fresh variable (say $z$)
     that does not appear in $\phi$. Then, $\phi$ is equivalent to
     \[
-        \exists z~ \bigparenthesis{\neg\exists x\, (x < z) \wedge \phi_{[z/0]}}
+        \exists z~ \bigparenthesis{\neg\exists x\, (x < z) \wedge \phi_{[z:=0]}}
     \]
-    where $\phi_{[z/0]}$ is the formula where every 0 of $\phi$ is replaced by $z$.
-    \todo{Be consistant for the substitutions. Do I prefer $[Z/0]$ or $[Z := 0]$?}
+    where $\phi_{[z := 0]}$ is the formula where every 0 of $\phi$ is replaced by $z$.
 
     The formula $x < y$ is equivalent to \[
         \forall X~ \Bigparenthesis{
@@ -1729,6 +1901,7 @@ as $\text{S1S}_0$ formulas.
 \end{proof}
 
 \begin{theorem}
+    \label{thm:buchi-iff-s1s}
     An \w-language is Büchi-definable if and only if
     it is S1S definable.
 \end{theorem}
@@ -1839,7 +2012,24 @@ as $\text{S1S}_0$ formulas.
 
 \end{proof}
 
-\todo{Add theorem decidable !!}
+Given a S1S formula, we want to know whether it admits a model, that is,
+if some infinite word satifies the formula. The following theorem
+tells us that this problem is decidable.
+
+\begin{theorem}
+    The satisfiability problem for S1S is decidable.
+\end{theorem}
+\begin{proof}
+    Let $phi$ be a S1S formula. By \autoref{thm:buchi-iff-s1s} we have
+    an automaton \Aa that recognise the same words as \phi accepts.
+    It suffices to know whether \Aa recognises at least one word.
+
+    It is easy to find wether a Büchi automaton accepts at least one word,
+    and if so, to give one such word. Indeed, it suffices to find
+    a cycle in the graph of the automaton which is reachable from
+    the initial state and which contains an accepting state.
+    this can be done by a depth first search.
+\end{proof}
 
 \subsection{Bisimilarity}
 
@@ -2033,12 +2223,9 @@ by an observer with Ehrenfreucht-Fraïssé games.
 \end{example}
 
 
-
-\todo{introduce van Benthem theorem}
-
 \section{Mu calculus}
 
-\subsection{Definition}
+\subsection{A strange logic}
 
 We have seen the notion of bisimilarity, which is one way of considering
 different models the same. However, in MSO, there are formulas
@@ -2069,8 +2256,6 @@ On the other hand, some formulas always
 have the same truth value in bisimilar models.
 If one is to study which formulas of MSO are invariant under bisimilarity,
 they find a class of formulas that corresponds to the $\mu$-calculus.
-\todo{Apparently, this is not true. $\mu$-calculus is reported to be the fragment
-of FOL invariant by bisimilarity (van Benthem theorem).}
 
 The $\mu$-calculus is an extension of propositional logic,
 extended with modal and fixpoint operators.
@@ -2110,7 +2295,6 @@ extended with modal and fixpoint operators.
     \end{itemize}
 \end{definition}
 
-\todo{add motivation for modal operators and fixpoint operators}
 
 \begin{definition}
     A \emph{model} of $\mu$-calculus with signature $\sigma = P \cup M$
@@ -2210,8 +2394,34 @@ Informally, we have that
         of $\Meaning{\phi}^\IS_{i[Z := T]}$.
 \end{itemize}
 
-\todo{Add examples of mu-calculus formulas and their meaning}
-\subsection{Relation to MSO}
+We give a few examples of formulas and their meanings but without detailed
+explanations, as the semantics defined above are concise, but hard to interpret.
+In fact, we give an other caraterisation of the meaning of formulas using games,
+which makes reasonning with $\mu$-calculus easier.
+
+\begin{example}
+    We adopt the convention that when a language has only
+    one modal operator, for instance $\boite{m}$ and $\diam{m}$,
+    we write them simply as $\boite{}$ and $\diam{}$ respectively.
+    Let $\phi$ any formula of the $\mu$-calculus, (for instance, a proposition):
+    \begin{itemize}
+        \item $\nu Z \Par{\phi \wedge \boite{} Z}$ is interpreted
+            as ``\phi is true along every path''.
+            Indeed, $Z$ is the largest set of states in which $\phi$ is true,
+            and which remains true after moving along any edge.
+        \item $\mu Z \Par{\phi \vee \diam{} Z}$ is interpreted
+            as the existence of a path leading to a node where $\phi$ holds.
+        \item $\nu Y~ \mu X~ (\p \wedge \diam{} Y) \vee \diam{} X$
+            is the largest set of nodes which is closed under the property
+            that there is a path leading to a node where $\p$ holds.
+            Said otherwise, it is the set of paths on which \p holds inifinitely many times.
+    \end{itemize}
+\end{example}
+
+% \subsection{Relation to MSO}
+
+\todo{todo be do}
+
 \subsection{Model checking}
 
 As is often the case in logic,
@@ -2249,8 +2459,16 @@ Parity games are an important subject in complexity theory,
 as the problem of deciding whether the first or second player
 has a winning strategy is one of the few problems we know is
 in $\NP \cap \coNP$ be don't know if it is in $\Ptime$.
-We currently have a quasipolynomial algorithm due to XXX \todo{add ref},
-and it can be shown that it is even in $\mathsf{UP} \cap \mathsf{coUP}$.
+Finding the best bounds for the complexity of this problem is
+an active field of reasearch, with the first
+quasipolynomial time algorithm, due to \cite{calude2017deciding}.
+There have been many variants of this algorithm since and it is still
+an open question to understand them well and know whether a better algorithm
+can be devised.
+Lastly, this problem is one of the few problems in $\mathsf{UP} \cap \mathsf{coUP}$
+that are not found to be in $\Ptime$ yet \cite{jurdzinski1998deciding}.
+The most famous problem that fit in this category was primality checking.
+
 As a reminder, the class $\mathsf{UP}$ is the class of decision problems
 that can be verified in polynomial time and have unique short certificates,
 that is, there is a polynomial Turing machine in which at most one computation path accepts.
@@ -2295,8 +2513,9 @@ Note that any parity game is determined, as the winning set is
         \right)
     }
 \]
-which is a Borel set (in fact, it is $\borelsigma{3}$) and it is thus determinate.
-\todo{Add reference}
+which is a Borel set (in fact, it is $\borelsigma{3}$).
+Since all Borel games are determinated \cite{martin1975borel} there is always
+a player that has a winning strategy.
 
 We give an example of the model-checking game of $\mu$-calculus
 before defining it.
@@ -2661,10 +2880,10 @@ The code runs in any linux environement where its three dependencies are install
 
 This code can be run with \texttt{python safra.py --help} to get a list of the available options
 and usage examples. Because scripts and software are living beings, a more up-to-date
-version can be found at \todo{add gitlab url}
+version can be found at \url{https://gitlab.com/ddorn/safra}.
 
-\todo{add my python code here}
-
+\usemintedstyle{friendly}
+\inputminted[fontsize=\tiny]{python}{./safra_for_tex.py}
 
 
 \newpage
